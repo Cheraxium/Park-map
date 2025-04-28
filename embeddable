@@ -1,0 +1,5249 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Load Google Maps API synchronously without async -->
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDyQfogDPvpSMIgxHYhQi131eKEecXzPt0"></script>
+    <title>Address Map</title>
+    <style>
+          #map {
+              height: 600px;
+              width: 100%;
+          }
+            .content-outer-container {
+    		padding: 0px !important;
+		  }
+		   .main-inner-container {
+    		padding: 0px !important;
+  		}
+  		.main-container {
+  			padding: 0px !important;
+  		}
+          .gm-svpc {
+              display: none;
+          }
+          .info-window {
+              font-family: Arial, sans-serif;
+              max-width: 250px;
+              padding: 10px;
+              text-align: center;
+          }
+          .copy-btn {
+              background-color: #4CAF50;
+              color: white;
+              border: none;
+              padding: 5px 10px;
+              cursor: pointer;
+              margin-top: 5px;
+          }
+          .copy-btn:hover {
+              background-color: #45a049;
+          }
+          .oc-page-title, #breadcrumbs-container, #mainForm footer .footer-outer-container,
+          #mainForm header .toolbar-inner-container, #mainForm header .header-container,
+          #nav .grid .col-xs-12, .visuallyhidden, body > div {
+              display: none;
+          }
+          #mainForm .page-container {
+              height: 75em;
+          }
+          .instructions {
+              font-family: Arial, sans-serif;
+              font-size: 16px;
+              color: #333;
+              margin: 10px 0 20px 0;
+          }
+          .overlay {
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.5);
+              z-index: 998;
+              display: none;
+          }
+          .success-popup {
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background-color: #ffffff;
+              color: #333;
+              padding: 30px 40px;
+              border-radius: 12px;
+              z-index: 9999;
+              font-family: Arial, sans-serif;
+              box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+              text-align: center;
+              max-width: 400px;
+              width: 90%;
+              display: none;
+          }
+          .success-popup h3 {
+              color: #3A913F;
+              margin: 0 0 15px 0;
+              font-size: 24px;
+          }
+          .success-popup p {
+              margin: 0 0 20px 0;
+              font-size: 16px;
+          }
+          .success-popup button {
+              background-color: #3A913F;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 5px;
+              cursor: pointer;
+              font-size: 16px;
+              transition: background-color 0.3s;
+          }
+          .success-popup button:hover {
+              background-color: #317d35;
+          }
+          .close-instruction {
+              font-style: italic;
+              font-size: 14px;
+              color: #666;
+              margin-top: 20px;
+          }
+          #category-filters {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 8px;
+              padding: 10px;
+              border-radius: 5px;
+              font-family: Arial, sans-serif;
+              left: 220px !important;
+          }
+          .category-filter {
+              padding: 6px 12px;
+              border-radius: 20px;
+              cursor: pointer;
+              font-size: 14px;
+              font-family: Arial, sans-serif;
+              border: none;
+              color: white;
+              transition: box-shadow 0.2s ease, transform 0.2s ease;
+          }
+          .category-filter:hover {
+              opacity: 0.9;
+              transform: scale(1.05);
+          }
+          .category-filter.active {
+              box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+              transform: translateY(1px);
+              background-color: #555555;
+          }
+          .category-filter.active::before {
+              content: "×";
+              position: absolute;
+              top: 2px;
+              left: 4px;
+              font-size: 12px;
+              color: white;
+              font-weight: bold;
+          }
+          .category-filter.active {
+              padding-left: 20px;
+          }
+          .category-filter[data-category="all"] { background-color: #555555; }
+          .category-filter[data-category="Aquatic"] { background-color: #0077B6; }
+          .aquatic { background-color: #0077B6; }
+          .community-buildings { background-color: #9D4EDD; }
+          .cultural-entertainment { background-color: #FF6B6B; }
+          .parks-open-spaces { background-color: #38B000; }
+          .showgrounds { background-color: #FB8500; }
+          .sports-fields-courts { background-color: #D62828; }
+          .regional-parks { background-color: #006400; }
+          .category-pill {
+              display: inline-block;
+              padding: 0px 8px;
+              margin: 2px;
+              border-radius: 20px;
+              cursor: pointer;
+              font-size: 14px;
+              transition: all 0.2s ease;
+              border: 2px solid;
+          }
+          .category-pill {
+              background-color: #fff;
+              color: inherit;
+              border-color: inherit;
+          }
+          .category-pill.active {
+              background-color: inherit;
+              color: #fff;
+              border-color: inherit;
+          }
+          .category-pill:not(.active):hover {
+              background-color: inherit;
+          }
+          .category-pill .close-x {
+              position: absolute;
+              left: 8px;
+              top: 50%;
+              transform: translateY(-50%);
+              font-size: 12px;
+              color: #fff;
+              display: none;
+          }
+          .category-pill.active .close-x {
+              display: inline;
+          }
+          .loading-overlay {
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(255, 255, 255, 0.9);
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              z-index: 10000;
+          }
+          .spinner {
+              width: 40px;
+              height: 40px;
+              border: 4px solid #2F2B4E;
+              border-top: 4px solid transparent;
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+              margin-bottom: 10px;
+          }
+          @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+          }
+          #search-control {
+              position: absolute;
+              bottom: 187px;
+              right: 0px;
+              overflow: hidden;
+              height: 300px;
+              width: 364px;
+              background: white;
+              padding: 10px;
+              border-radius: 5px;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              font-family: Arial, sans-serif;
+          }
+          #location-search {
+              width: 100%;
+              padding: 5px;
+              font-size: 14px;
+              border: 1px solid #ccc;
+              border-radius: 4px;
+              box-sizing: border-box;
+              margin-bottom: 5px;
+          }
+          #search-results-list {
+              list-style: none;
+              padding: 0;
+              margin: 0;
+              max-height: 260px;
+              overflow-y: auto;
+              background: white;
+              border-radius: 5px;
+          }
+          #search-results-list li {
+              padding: 10px;
+              border-bottom: 1px solid #eee;
+              cursor: pointer;
+              transition: background-color 0.2s;
+          }
+          #search-results-list li:hover {
+              background-color: #f5f5f5;
+          }
+          #search-results-list li:last-child {
+              border-bottom: none;
+          }
+          .location-category {
+              font-size: 12px;
+              padding: 2px 6px;
+              border-radius: 10px;
+              margin-left: 8px;
+              color: white;
+              display: inline-block;
+          }
+      </style>
+  </head>
+  <body>
+      <h1>Find an Address</h1>
+      <p class="instructions">
+          Use the interactive map to find the community facility you'd like to provide feedback on. Once found, click on the colored location icon to view the facility name. Press 'Copy Address Name' and you'll be prompted back to the survey to paste the facility name in the box provided.
+      </p>
+      <div id="loading-overlay" class="loading-overlay">
+          <div class="spinner"></div>
+          <p>Loading map and locations...</p>
+      </div>
+      <div id="map">
+          <div id="search-control">
+              <input id="location-search" type="text" placeholder="Search locations...">
+              <ul id="search-results-list"></ul>
+          </div>
+      </div>
+      <div id="category-filters"></div>
+      <div id="overlay" class="overlay"></div>
+      <div id="successPrompt" class="success-popup">
+          <h3>Success</h3>
+          <p id="successText"></p>
+          <button id="returnBtn">Return to Form</button>
+          <div class="close-instruction">Or close this tab manually</div>
+      </div>
+      
+    <script>
+        const categories = [
+            { name: "Aquatic", class: "aquatic", color: "#0077B6" },
+            { name: "Community Buildings", class: "community-buildings", color: "#9D4EDD" },
+            { name: "Cultural & Entertainment", class: "cultural-entertainment", color: "#FF6B6B" },
+            { name: "Parks & Open Spaces / Natural Areas", class: "parks-open-spaces", color: "#38B000" },
+            { name: "Showgrounds", class: "showgrounds", color: "#FB8500" },
+            { name: "Sports Fields & Courts", class: "sports-fields-courts", color: "#D62828" },
+            { name: "Regional Parks", class: "regional-parks", color: "#006400" }
+        ];
+  
+        const locations = [
+  
+  {
+    "name": "Sussex Inlet Aquatic Centre",
+    "suburb": "Sussex Inlet",
+    "category": "Aquatic",
+    "lat": -35.16635282,
+    "lng": 150.586525
+  },
+  {
+    "name": "Bomaderry Aquatic Centre (SCaRP)",
+    "suburb": "Bomaderry",
+    "category": "Aquatic",
+    "lat": -34.84455233,
+    "lng": 150.6008139
+  },
+  {
+    "name": "Berry Village Pool",
+    "suburb": "Berry",
+    "category": "Aquatic",
+    "lat": -34.77865471,
+    "lng": 150.693672
+  },
+  {
+    "name": "Greenwell Point Village Pool",
+    "suburb": "Greenwell Point",
+    "category": "Aquatic",
+    "lat": -34.9077175,
+    "lng": 150.7355412
+  },
+  {
+    "name": "Milton Village Pool",
+    "suburb": "Milton",
+    "category": "Aquatic",
+    "lat": -35.31531354,
+    "lng": 150.438222
+  },
+  {
+    "name": "Kangaroo Valley Village Pool",
+    "suburb": "Kangaroo Valley",
+    "category": "Aquatic",
+    "lat": -34.73641507,
+    "lng": 150.5353457
+  },
+  {
+    "name": "Nowra Aquatic Park",
+    "suburb": "Nowra",
+    "category": "Aquatic",
+    "lat": -34.86667556,
+    "lng": 150.5997198
+  },
+  {
+    "name": "Shoalhaven Heads Village Pool",
+    "suburb": "Shoalhaven Heads",
+    "category": "Aquatic",
+    "lat": -34.85134501,
+    "lng": 150.7460273
+  },
+  {
+    "name": "Ulladulla Leisure Centre",
+    "suburb": "Ulladulla",
+    "category": "Aquatic",
+    "lat": -35.35586119,
+    "lng": 150.460566
+  },
+  {
+    "name": "Ulladulla Sea Pool",
+    "suburb": "Ulladulla",
+    "category": "Aquatic",
+    "lat": -35.35922592,
+    "lng": 150.4784997
+  },
+  {
+    "name": "Bay and Basin Leisure Centre",
+    "suburb": "Vincentia",
+    "category": "Aquatic",
+    "lat": -35.0750717,
+    "lng": 150.6627248
+  },
+  {
+    "name": "Cudmirrah / Berrara Community Hall",
+    "suburb": "Cudmirrah",
+    "category": "Community Buildings",
+    "lat": -35.19781582,
+    "lng": 150.5584795
+  },
+  {
+    "name": "Former Pyree School Hall Site",
+    "suburb": "Pyree",
+    "category": "Community Buildings",
+    "lat": -34.90866171,
+    "lng": 150.6867541
+  },
+  {
+    "name": "St Georges Basin Community Centre",
+    "suburb": "St Georges Basin",
+    "category": "Community Buildings",
+    "lat": -35.09730904,
+    "lng": 150.5985715
+  },
+  {
+    "name": "Bomaderry Community Centre",
+    "suburb": "Bomaderry",
+    "category": "Community Buildings",
+    "lat": -34.85047258,
+    "lng": 150.6088056
+  },
+  {
+    "name": "Culburra Surf Life Saving Club",
+    "suburb": "Culburra Beach",
+    "category": "Community Buildings",
+    "lat": -34.93351435,
+    "lng": 150.7792219
+  },
+  {
+    "name": "Lions Club (former RFS shed) Erowal Bay",
+    "suburb": "Erowal Bay",
+    "category": "Community Buildings",
+    "lat": -35.10185894,
+    "lng": 150.6507001
+  },
+  {
+    "name": "Community Hall Burrill Lake",
+    "suburb": "Burrill Lake",
+    "category": "Community Buildings",
+    "lat": -35.38504171,
+    "lng": 150.4532742
+  },
+  {
+    "name": "Men's Shed Shoalhaven Heads",
+    "suburb": "Shoalhaven Heads",
+    "category": "Community Buildings",
+    "lat": -34.85611548,
+    "lng": 150.7365788
+  },
+  {
+    "name": "Surf Life Saving Club Sussex Inlet",
+    "suburb": "Sussex Inlet",
+    "category": "Community Buildings",
+    "lat": -35.18757315,
+    "lng": 150.582134
+  },
+  {
+    "name": "Former Courthouse",
+    "suburb": "Berry",
+    "category": "Community Buildings",
+    "lat": -34.77735242,
+    "lng": 150.6933045
+  },
+  {
+    "name": "School of Arts Berry",
+    "suburb": "Berry",
+    "category": "Community Buildings",
+    "lat": -34.77660129,
+    "lng": 150.695885
+  },
+  {
+    "name": "179 Illaroo Road North Nowra",
+    "suburb": "North Nowra",
+    "category": "Community Buildings",
+    "lat": -34.85734061,
+    "lng": 150.5835927
+  },
+  {
+    "name": "North Nowra Community Centre",
+    "suburb": "North Nowra",
+    "category": "Community Buildings",
+    "lat": -34.85805736,
+    "lng": 150.5821892
+  },
+  {
+    "name": "Holloway & Park Road Nowra",
+    "suburb": "Nowra",
+    "category": "Community Buildings",
+    "lat": -34.89658531,
+    "lng": 150.6128158
+  },
+  {
+    "name": "Men's Shed Culburra Beach",
+    "suburb": "Culburra Beach",
+    "category": "Community Buildings",
+    "lat": -34.93533841,
+    "lng": 150.7654008
+  },
+  {
+    "name": "Bay Resource Community Centre",
+    "suburb": "Sanctuary Point",
+    "category": "Community Buildings",
+    "lat": -35.1041807,
+    "lng": 150.6274082
+  },
+  {
+    "name": "Men's Shed Ulladulla",
+    "suburb": "Ulladulla",
+    "category": "Community Buildings",
+    "lat": -35.36559222,
+    "lng": 150.4683005
+  },
+  {
+    "name": "Manjushri Buddhist Centre Milton",
+    "suburb": "Milton",
+    "category": "Community Buildings",
+    "lat": -35.3172611,
+    "lng": 150.4360095
+  },
+  {
+    "name": "Greenwell Point Memorial Community Hall",
+    "suburb": "Greenwell Point",
+    "category": "Community Buildings",
+    "lat": -34.90748758,
+    "lng": 150.731679
+  },
+  {
+    "name": "11 Lamonds Lane Nowra",
+    "suburb": "Nowra",
+    "category": "Community Buildings",
+    "lat": -34.87073466,
+    "lng": 150.5996963
+  },
+  {
+    "name": "Huskisson Community Centre",
+    "suburb": "Huskisson",
+    "category": "Community Buildings",
+    "lat": -35.0350283,
+    "lng": 150.6670257
+  },
+  {
+    "name": "RFS Greenwell Point",
+    "suburb": "Greenwell Point",
+    "category": "Community Buildings",
+    "lat": -34.90839793,
+    "lng": 150.7249264
+  },
+  {
+    "name": "Culburra Beach Community Centre",
+    "suburb": "Culburra Beach",
+    "category": "Community Buildings",
+    "lat": -34.93237824,
+    "lng": 150.7538673
+  },
+  {
+    "name": "SLSC Shoalhaven Heads",
+    "suburb": "Shoalhaven Heads",
+    "category": "Community Buildings",
+    "lat": -34.85107124,
+    "lng": 150.7497363
+  },
+  {
+    "name": "Erowal Bay Public Hall",
+    "suburb": "Erowal Bay",
+    "category": "Community Buildings",
+    "lat": -35.09987125,
+    "lng": 150.6532883
+  },
+  {
+    "name": "Nowra Youth Centre",
+    "suburb": "Nowra",
+    "category": "Community Buildings",
+    "lat": -34.87881426,
+    "lng": 150.6025029
+  },
+  {
+    "name": "Ulladulla Multipurpose Centre",
+    "suburb": "Ulladulla",
+    "category": "Community Buildings",
+    "lat": -35.35762829,
+    "lng": 150.4720183
+  },
+  {
+    "name": "Vincentia Public Hall",
+    "suburb": "Vincentia",
+    "category": "Community Buildings",
+    "lat": -35.0707321,
+    "lng": 150.6728555
+  },
+  {
+    "name": "Men's Shed Clifton Park",
+    "suburb": "Sanctuary Point",
+    "category": "Community Buildings",
+    "lat": -35.10908197,
+    "lng": 150.6260168
+  },
+  {
+    "name": "Nowra Culburra Surf Life Saving Club",
+    "suburb": "Culburra Beach",
+    "category": "Community Buildings",
+    "lat": -34.93382331,
+    "lng": 150.7790603
+  },
+  {
+    "name": "Nowra School of Arts & Supper Room",
+    "suburb": "Nowra",
+    "category": "Community Buildings",
+    "lat": -34.87351369,
+    "lng": 150.6002077
+  },
+  {
+    "name": "Callala Bay Progress Hall",
+    "suburb": "Callala Bay",
+    "category": "Community Buildings",
+    "lat": -35.00402273,
+    "lng": 150.7230152
+  },
+  {
+    "name": "Clifton Park Community Garden",
+    "suburb": "Sanctuary Point",
+    "category": "Community Buildings",
+    "lat": -35.10902197,
+    "lng": 150.62582
+  },
+  {
+    "name": "Murramarang Men's Shed",
+    "suburb": "Kioloa",
+    "category": "Community Buildings",
+    "lat": -35.5369405,
+    "lng": 150.3861389
+  },
+  {
+    "name": "Callala Beach Community Centre & Tennis Complex",
+    "suburb": "Callala Beach",
+    "category": "Community Buildings",
+    "lat": -35.01242781,
+    "lng": 150.6932946
+  },
+  {
+    "name": "Ulladulla Civic Centre",
+    "suburb": "Ulladulla",
+    "category": "Cultural & Entertainment",
+    "lat": -35.35571513,
+    "lng": 150.4736142
+  },
+  {
+    "name": "Lake Tabourie Museum",
+    "suburb": "Lake Tabourie",
+    "category": "Cultural & Entertainment",
+    "lat": -35.43336351,
+    "lng": 150.4039133
+  },
+  {
+    "name": "Shoalhaven City Turf Club",
+    "suburb": "South Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.90345836,
+    "lng": 150.5893129
+  },
+  {
+    "name": "Nowra Harness Racing Club",
+    "suburb": "South Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.89854958,
+    "lng": 150.5917751
+  },
+  {
+    "name": "Shoalhaven Regional Gallery",
+    "suburb": "Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.87337761,
+    "lng": 150.6011794
+  },
+  {
+    "name": "Lady Denman Heritage Complex Huskisson",
+    "suburb": "Huskisson",
+    "category": "Cultural & Entertainment",
+    "lat": -35.03397142,
+    "lng": 150.6673886
+  },
+  {
+    "name": "Nowra Speedway",
+    "suburb": "South Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.89854958,
+    "lng": 150.5917751
+  },
+  {
+    "name": "Nowra Players Theatre",
+    "suburb": "Bomaderry",
+    "category": "Cultural & Entertainment",
+    "lat": -34.85223066,
+    "lng": 150.6097873
+  },
+  {
+    "name": "Muir House",
+    "suburb": "Berry",
+    "category": "Cultural & Entertainment",
+    "lat": -34.77498077,
+    "lng": 150.6993674
+  },
+  {
+    "name": "Shoalhaven Greyhound Racing Club",
+    "suburb": "South Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.89775666,
+    "lng": 150.5893613
+  },
+  {
+    "name": "Shoalhaven Entertainment Centre",
+    "suburb": "Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.86895,
+    "lng": 150.60203
+  },
+  {
+    "name": "Nowra Library",
+    "suburb": "Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.87305861,
+    "lng": 150.601245
+  },
+  {
+    "name": "Shoalhaven District Racing Complex",
+    "suburb": "South Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.90250282,
+    "lng": 150.5896386
+  },
+  {
+    "name": "Sussex Inlet Cinema & Amenities",
+    "suburb": "Sussex Inlet",
+    "category": "Cultural & Entertainment",
+    "lat": -35.15648256,
+    "lng": 150.6003358
+  },
+  {
+    "name": "Sanctuary Point Community Arts Cottage",
+    "suburb": "Sanctuary Point",
+    "category": "Cultural & Entertainment",
+    "lat": -35.11015166,
+    "lng": 150.636389
+  },
+  {
+    "name": "Currarong Arts & Crafts Society",
+    "suburb": "Currarong",
+    "category": "Cultural & Entertainment",
+    "lat": -35.01616141,
+    "lng": 150.8230045
+  },
+  {
+    "name": "Berry Museum",
+    "suburb": "Berry",
+    "category": "Cultural & Entertainment",
+    "lat": -34.7753358,
+    "lng": 150.6985566
+  },
+  {
+    "name": "Milton Cultural Centre",
+    "suburb": "Milton",
+    "category": "Cultural & Entertainment",
+    "lat": -35.31590154,
+    "lng": 150.4350439
+  },
+  {
+    "name": "Nowra Museum",
+    "suburb": "Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.87876967,
+    "lng": 150.6019206
+  },
+  {
+    "name": "Werninck Craft Cottage",
+    "suburb": "Nowra",
+    "category": "Cultural & Entertainment",
+    "lat": -34.87886126,
+    "lng": 150.6028488
+  },
+  {
+    "name": "Ulladulla's Oldest House",
+    "suburb": "Ulladulla",
+    "category": "Cultural & Entertainment",
+    "lat": -35.35666773,
+    "lng": 150.4729071
+  },
+  {
+    "name": "Huskisson Cinema & Public Amenity",
+    "suburb": "Huskisson",
+    "category": "Cultural & Entertainment",
+    "lat": -35.03830223,
+    "lng": 150.6680586
+  },
+  {
+    "name": "Sanctuary Point Library",
+    "suburb": "Sanctuary Point",
+    "category": "Cultural & Entertainment",
+    "lat": -35.1037035,
+    "lng": 150.6282898
+  },
+  {
+    "name": "Community Craft Cottage (The Bizarre)",
+    "suburb": "Berry",
+    "category": "Cultural & Entertainment",
+    "lat": -34.77525646,
+    "lng": 150.6992044
+  },
+  {
+    "name": "Basin View Boat Ramp Reserve: Off-Leash Area",
+    "suburb": "Basin View",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09304124,
+    "lng": 150.5615917
+  },
+  {
+    "name": "Cormorant Beach: Off-Leash Area",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.50963658,
+    "lng": 150.3972711
+  },
+  {
+    "name": "Washerwomans Beach: Off-Leash Area",
+    "suburb": "Bendalong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.24099513,
+    "lng": 150.5309198
+  },
+  {
+    "name": "Camp Quality Park at Boongaree",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77222864,
+    "lng": 150.7025915
+  },
+  {
+    "name": "SCaRP, Cricket Oval: Off-Leash area",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84320755,
+    "lng": 150.6010221
+  },
+  {
+    "name": "Thurgate Oval: Off-leash Area",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85626705,
+    "lng": 150.6051503
+  },
+  {
+    "name": "Callala Beach: Off-Leash Area",
+    "suburb": "Callala Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.00849756,
+    "lng": 150.704607
+  },
+  {
+    "name": "Callala Beach: Off-Leash Area",
+    "suburb": "Callala Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.02143959,
+    "lng": 150.681936
+  },
+  {
+    "name": "Culburra Beach: Off-Leash Area",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.92193942,
+    "lng": 150.7662334
+  },
+  {
+    "name": "Currarong Beach: Off-Leash Area",
+    "suburb": "Currarong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01459348,
+    "lng": 150.8153564
+  },
+  {
+    "name": "Greenwell Point: Fenced Off-Leash Excercise Area",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90580423,
+    "lng": 150.725844
+  },
+  {
+    "name": "Huskisson Beach: Off-Leash Area",
+    "suburb": "Huskisson Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.04656794,
+    "lng": 150.6758961
+  },
+  {
+    "name": "Milton Showground: Off-Leash Area",
+    "suburb": "Milton",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32047973,
+    "lng": 150.4292696
+  },
+  {
+    "name": "Bill Andriske Oval: Off-Leash Area",
+    "suburb": "Mollymook Public Reserve",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32429376,
+    "lng": 150.4751736
+  },
+  {
+    "name": "Ulladulla Harbour Northern Beach: Off-Leash Area",
+    "suburb": "Mollymook/Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.35394563,
+    "lng": 150.4775359
+  },
+  {
+    "name": "Collers Beach: Off-Leash Area",
+    "suburb": "Mollymook/Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34623121,
+    "lng": 150.4755337
+  },
+  {
+    "name": "Narrawallee Beach: Off-Leash Area",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31262281,
+    "lng": 150.4717166
+  },
+  {
+    "name": "Nowra Showground & Dog Agility Park",
+    "suburb": "Nowra Showground",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.87309401,
+    "lng": 150.5925176
+  },
+  {
+    "name": "Clifton Park: Fenced Off-Leash Exercise Area",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10957442,
+    "lng": 150.6249546
+  },
+  {
+    "name": "Jerry Bailey Oval: Fenced Off-Leash Exercise Area",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84982259,
+    "lng": 150.7472352
+  },
+  {
+    "name": "River Road Reserve, Shoalhaven Heads: Off-Leash Area",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85642634,
+    "lng": 150.7379158
+  },
+  {
+    "name": "Shoalhaven Heads Beach: Off-Leash Area",
+    "suburb": "Shoalhaven Heads Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84852172,
+    "lng": 150.7507764
+  },
+  {
+    "name": "Swan Lake: Off-Leash Area",
+    "suburb": "Swan Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.18844052,
+    "lng": 150.5689149
+  },
+  {
+    "name": "Nelsons Beach: Off-Leash Area",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07593552,
+    "lng": 150.6936666
+  },
+  {
+    "name": "Ratcliffe Park: Off-Leash Area",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89065231,
+    "lng": 150.6191882
+  },
+  {
+    "name": "Plantation Point",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07274594,
+    "lng": 150.694498
+  },
+  {
+    "name": "Moona Moona Creek Reserve",
+    "suburb": "Huskisson",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.04914158,
+    "lng": 150.675256
+  },
+  {
+    "name": "Hoylake Reserve",
+    "suburb": "Conjola Park",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26081897,
+    "lng": 150.4396803
+  },
+  {
+    "name": "John Berry Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83891211,
+    "lng": 150.6117053
+  },
+  {
+    "name": "Huskisson Beach Holiday Park",
+    "suburb": "Huskisson",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.04706046,
+    "lng": 150.6745386
+  },
+  {
+    "name": "Almondbark Reserve",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89710918,
+    "lng": 150.6240284
+  },
+  {
+    "name": "Andrew Cres Reserve",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89914735,
+    "lng": 150.6204939
+  },
+  {
+    "name": "Elderberry Reserve",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89088328,
+    "lng": 150.6238656
+  },
+  {
+    "name": "Forestpark Reserve",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90139512,
+    "lng": 150.6306637
+  },
+  {
+    "name": "Old Southern Reserve",
+    "suburb": "South Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90002696,
+    "lng": 150.6169237
+  },
+  {
+    "name": "Rayleigh Gardens Tennis Court Park",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89137609,
+    "lng": 150.6289358
+  },
+  {
+    "name": "Rayleigh Sullivan Reserve",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89716758,
+    "lng": 150.6274529
+  },
+  {
+    "name": "Sugarwood Reserve",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8939968,
+    "lng": 150.6221564
+  },
+  {
+    "name": "Lyndon Reserve",
+    "suburb": "West Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88567795,
+    "lng": 150.5850424
+  },
+  {
+    "name": "Racemosa Reserve",
+    "suburb": "West Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88764879,
+    "lng": 150.5843085
+  },
+  {
+    "name": "Rannoch Reserve",
+    "suburb": "West Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89348374,
+    "lng": 150.5831501
+  },
+  {
+    "name": "South Nowra Rotary Roadside Park",
+    "suburb": "South Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90791188,
+    "lng": 150.6021916
+  },
+  {
+    "name": "Aspinall Street Reserve",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85056427,
+    "lng": 150.7443819
+  },
+  {
+    "name": "Curtis Reserve",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85588359,
+    "lng": 150.7361641
+  },
+  {
+    "name": "Golden Hill Avenue Reserve",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84941627,
+    "lng": 150.739548
+  },
+  {
+    "name": "Pepper Reserve",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84264881,
+    "lng": 150.7410388
+  },
+  {
+    "name": "River Road Foreshore",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85666947,
+    "lng": 150.7375255
+  },
+  {
+    "name": "Memorial Park",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85123464,
+    "lng": 150.7443662
+  },
+  {
+    "name": "Torridon Street Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89107009,
+    "lng": 150.6150576
+  },
+  {
+    "name": "Taranna Cres Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89001304,
+    "lng": 150.6036516
+  },
+  {
+    "name": "Allowrie Crescent Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89252569,
+    "lng": 150.6148023
+  },
+  {
+    "name": "Clipper Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88928256,
+    "lng": 150.6159825
+  },
+  {
+    "name": "Davis Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8802335,
+    "lng": 150.5975182
+  },
+  {
+    "name": "Dryden Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.87836142,
+    "lng": 150.6092861
+  },
+  {
+    "name": "Elyard Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89277639,
+    "lng": 150.5968869
+  },
+  {
+    "name": "Parramatta Endeavour Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88995985,
+    "lng": 150.6118154
+  },
+  {
+    "name": "Harry Sawkins Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.870694,
+    "lng": 150.603661
+  },
+  {
+    "name": "Moorehouse Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86773835,
+    "lng": 150.5996706
+  },
+  {
+    "name": "Jelly Bean Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.87393327,
+    "lng": 150.6020706
+  },
+  {
+    "name": "Maclean Kinghorne Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89185844,
+    "lng": 150.6013866
+  },
+  {
+    "name": "Margaret Kerwick Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88736075,
+    "lng": 150.5984684
+  },
+  {
+    "name": "Nowra Foreshore",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86602859,
+    "lng": 150.5998748
+  },
+  {
+    "name": "Maclean Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89269796,
+    "lng": 150.6005447
+  },
+  {
+    "name": "Purdie Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89047954,
+    "lng": 150.5995198
+  },
+  {
+    "name": "Rauch Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.87441039,
+    "lng": 150.5996028
+  },
+  {
+    "name": "Stimson Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88355962,
+    "lng": 150.5999708
+  },
+  {
+    "name": "Ilinga Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86231276,
+    "lng": 150.5804741
+  },
+  {
+    "name": "Crest Park",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86034349,
+    "lng": 150.5896648
+  },
+  {
+    "name": "Devlin Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86114362,
+    "lng": 150.5683591
+  },
+  {
+    "name": "Golden Cane Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85150263,
+    "lng": 150.5723165
+  },
+  {
+    "name": "Gordon Cook Apex Park",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84801627,
+    "lng": 150.5731464
+  },
+  {
+    "name": "Riverbank Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86511449,
+    "lng": 150.5946732
+  },
+  {
+    "name": "Joe Hyam Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86418934,
+    "lng": 150.5844904
+  },
+  {
+    "name": "Sharpe Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86076557,
+    "lng": 150.5820419
+  },
+  {
+    "name": "Soldiers Memorial",
+    "suburb": "Kangaroo Valley",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.73601416,
+    "lng": 150.5327335
+  },
+  {
+    "name": "Township Reserve",
+    "suburb": "Kangaroo Valley",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.73127754,
+    "lng": 150.5221854
+  },
+  {
+    "name": "Bangalee Reserve",
+    "suburb": "Watersleigh",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85504474,
+    "lng": 150.5286856
+  },
+  {
+    "name": "Salisbury Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88739521,
+    "lng": 150.6129624
+  },
+  {
+    "name": "Good Dog Creek Reserve",
+    "suburb": "Cambewarra Village",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.82206581,
+    "lng": 150.5626462
+  },
+  {
+    "name": "Rouse Ave Reserve",
+    "suburb": "Cambewarra Village",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.82479802,
+    "lng": 150.5589971
+  },
+  {
+    "name": "Bunberra Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85018876,
+    "lng": 150.602442
+  },
+  {
+    "name": "Ferntree Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8393032,
+    "lng": 150.5984816
+  },
+  {
+    "name": "Meroo Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83737229,
+    "lng": 150.6099865
+  },
+  {
+    "name": "Endeavour Park",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84433119,
+    "lng": 150.6102686
+  },
+  {
+    "name": "Mulgen Creek Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84069023,
+    "lng": 150.6015926
+  },
+  {
+    "name": "Mulgen Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8480223,
+    "lng": 150.609776
+  },
+  {
+    "name": "Penrose Drive Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83817768,
+    "lng": 150.6089425
+  },
+  {
+    "name": "Regent Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83715903,
+    "lng": 150.6030364
+  },
+  {
+    "name": "Reid Park",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85153522,
+    "lng": 150.6056496
+  },
+  {
+    "name": "Sampson Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84558419,
+    "lng": 150.6068344
+  },
+  {
+    "name": "Thurgate Oval",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85596076,
+    "lng": 150.6052347
+  },
+  {
+    "name": "Walsh Park",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85510955,
+    "lng": 150.6088087
+  },
+  {
+    "name": "Waroo Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83546083,
+    "lng": 150.6064241
+  },
+  {
+    "name": "Albany Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77591739,
+    "lng": 150.6936916
+  },
+  {
+    "name": "Berry ANZAC Park",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77947859,
+    "lng": 150.6966571
+  },
+  {
+    "name": "Berry Apex Park",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.7752474,
+    "lng": 150.6995959
+  },
+  {
+    "name": "Camp Quality Park",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77215016,
+    "lng": 150.7022882
+  },
+  {
+    "name": "Mark Radium Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77516747,
+    "lng": 150.6855813
+  },
+  {
+    "name": "Queen Street Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77501011,
+    "lng": 150.6901419
+  },
+  {
+    "name": "Victoria Street Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77705234,
+    "lng": 150.6965501
+  },
+  {
+    "name": "Windsor Drive Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77568299,
+    "lng": 150.6874462
+  },
+  {
+    "name": "Lochaven Drive Reserve",
+    "suburb": "Bangalee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84569142,
+    "lng": 150.5595125
+  },
+  {
+    "name": "Binnowee Place Reserve",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.50888699,
+    "lng": 150.3924724
+  },
+  {
+    "name": "Boathaven Beach Reserve",
+    "suburb": "Bendalong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.24517982,
+    "lng": 150.5380547
+  },
+  {
+    "name": "Berrara Lagoon Reserve",
+    "suburb": "Berrara",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.2052049,
+    "lng": 150.5468427
+  },
+  {
+    "name": "Silversands Drive Reserve",
+    "suburb": "Berrara",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.20826148,
+    "lng": 150.5515875
+  },
+  {
+    "name": "Barker Reserve",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.38370934,
+    "lng": 150.4390521
+  },
+  {
+    "name": "Racecourse Creek Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.37285177,
+    "lng": 150.4655112
+  },
+  {
+    "name": "McDonald Parade Reserve",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.38637032,
+    "lng": 150.4492733
+  },
+  {
+    "name": "Third Avenue Reserve",
+    "suburb": "Cudmirrah",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.20243952,
+    "lng": 150.5575629
+  },
+  {
+    "name": "Cunjurong Point Reserve",
+    "suburb": "Cunjurong Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26569525,
+    "lng": 150.5123758
+  },
+  {
+    "name": "Kings Point Reserve",
+    "suburb": "Kings Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.36885687,
+    "lng": 150.436802
+  },
+  {
+    "name": "Kurrawa Reserve",
+    "suburb": "Kioloa",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.56263564,
+    "lng": 150.3762935
+  },
+  {
+    "name": "Aney Street Boat Ramp Reserve",
+    "suburb": "Lake Conjola",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26792477,
+    "lng": 150.489552
+  },
+  {
+    "name": "Carroll Avenue Reserve",
+    "suburb": "Lake Conjola",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26785058,
+    "lng": 150.4920194
+  },
+  {
+    "name": "Milham Street Foreshore Reserve",
+    "suburb": "Lake Conjola",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26830461,
+    "lng": 150.4849832
+  },
+  {
+    "name": "Lake Conjola Entrance Boat Ramp",
+    "suburb": "Lake Conjola",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26948742,
+    "lng": 150.5002056
+  },
+  {
+    "name": "Lake Tabourie Inlet Reserve",
+    "suburb": "Lake Tabourie",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.44393703,
+    "lng": 150.4038267
+  },
+  {
+    "name": "Lake Tabourie Boat Ramp",
+    "suburb": "Lake Tabourie",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.43878001,
+    "lng": 150.4063186
+  },
+  {
+    "name": "The Bulwark Reserve",
+    "suburb": "Manyana",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.25920762,
+    "lng": 150.5178322
+  },
+  {
+    "name": "Mick Ryan Park",
+    "suburb": "Milton",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31464999,
+    "lng": 150.4329512
+  },
+  {
+    "name": "Milton Memorial Park",
+    "suburb": "Milton",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31520146,
+    "lng": 150.4349817
+  },
+  {
+    "name": "Bannister Headland Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32234691,
+    "lng": 150.4846572
+  },
+  {
+    "name": "Edith Twynam Reserve",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34420408,
+    "lng": 150.4766495
+  },
+  {
+    "name": "Mison Circuit Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.33126164,
+    "lng": 150.46036
+  },
+  {
+    "name": "Treetops Crescent Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32513572,
+    "lng": 150.4685817
+  },
+  {
+    "name": "Woodglen Crescent Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.3205394,
+    "lng": 150.4743053
+  },
+  {
+    "name": "Anker Avenue Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32152566,
+    "lng": 150.4766589
+  },
+  {
+    "name": "Bannister Head Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32089209,
+    "lng": 150.4792326
+  },
+  {
+    "name": "Leo Drive Reserve",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31605572,
+    "lng": 150.4659738
+  },
+  {
+    "name": "Narrawallee Inlet Reserve",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.30538605,
+    "lng": 150.4720643
+  },
+  {
+    "name": "Edgewater Avenue Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.17272506,
+    "lng": 150.5881587
+  },
+  {
+    "name": "Avocet Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16357346,
+    "lng": 150.5876479
+  },
+  {
+    "name": "Cater Reserve (2)",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16180709,
+    "lng": 150.5886845
+  },
+  {
+    "name": "Jacob Ellmoos Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16018313,
+    "lng": 150.6015809
+  },
+  {
+    "name": "Jacobs Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.15826203,
+    "lng": 150.5899922
+  },
+  {
+    "name": "Paradise Keys Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.15581678,
+    "lng": 150.5956572
+  },
+  {
+    "name": "Lions Park Maritime Precinct",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.17202906,
+    "lng": 150.5899213
+  },
+  {
+    "name": "Murre Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16129672,
+    "lng": 150.5860378
+  },
+  {
+    "name": "Paradise Crescent Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.15671116,
+    "lng": 150.5941052
+  },
+  {
+    "name": "Shelly Grove Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.14899147,
+    "lng": 150.5888928
+  },
+  {
+    "name": "Trevenar Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16142011,
+    "lng": 150.5900687
+  },
+  {
+    "name": "William Mulligan Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16870252,
+    "lng": 150.594586
+  },
+  {
+    "name": "Wilson Corlis Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.15888562,
+    "lng": 150.5981079
+  },
+  {
+    "name": "Rennies Beach",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.36449527,
+    "lng": 150.485948
+  },
+  {
+    "name": "Ulladulla Rotary Park",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.35401154,
+    "lng": 150.4763401
+  },
+  {
+    "name": "South Pacific Crescent Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.3736395,
+    "lng": 150.4666688
+  },
+  {
+    "name": "Timbs Street Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34476604,
+    "lng": 150.4657263
+  },
+  {
+    "name": "Willunga Crescent Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.36038309,
+    "lng": 150.4660326
+  },
+  {
+    "name": "Basin View Boat Ramp Reserve",
+    "suburb": "Basin View",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.0933121,
+    "lng": 150.562141
+  },
+  {
+    "name": "Malcolm Moore BMX",
+    "suburb": "Basin View",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09097236,
+    "lng": 150.5613566
+  },
+  {
+    "name": "Pacific City Park",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07193476,
+    "lng": 150.6525327
+  },
+  {
+    "name": "Encounter Avenue Reserve",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.99223904,
+    "lng": 150.7242895
+  },
+  {
+    "name": "Gowland Cres Reserve",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.99261242,
+    "lng": 150.7165766
+  },
+  {
+    "name": "Huon Reserve",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.9901674,
+    "lng": 150.7191984
+  },
+  {
+    "name": "Sir Henry Crescent Reserve",
+    "suburb": "Callala Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01361576,
+    "lng": 150.6892879
+  },
+  {
+    "name": "Crookhaven Drive Reserve",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.91899635,
+    "lng": 150.7294461
+  },
+  {
+    "name": "Culburra Park",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.92901048,
+    "lng": 150.758795
+  },
+  {
+    "name": "Curleys Bay Reserve",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.92583332,
+    "lng": 150.7618637
+  },
+  {
+    "name": "Lake Wollumbulla Entrance",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.93926855,
+    "lng": 150.7746737
+  },
+  {
+    "name": "Tilbury Cove Reserve",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.93201678,
+    "lng": 150.7785053
+  },
+  {
+    "name": "Wheeler Park",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.9333371,
+    "lng": 150.7773515
+  },
+  {
+    "name": "Dolphin Reserve",
+    "suburb": "Currarong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01438285,
+    "lng": 150.8228786
+  },
+  {
+    "name": "Morgan Reserve",
+    "suburb": "Currarong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01616279,
+    "lng": 150.8240223
+  },
+  {
+    "name": "Walton Way Reserve",
+    "suburb": "Currarong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.0180655,
+    "lng": 150.8208209
+  },
+  {
+    "name": "Erowal Bay Boat Ramp",
+    "suburb": "Erowal Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10332302,
+    "lng": 150.6503876
+  },
+  {
+    "name": "Haiser Reserve",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.91173755,
+    "lng": 150.729847
+  },
+  {
+    "name": "West Street Reserve",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90604516,
+    "lng": 150.7258373
+  },
+  {
+    "name": "Huskisson Beach Reserve",
+    "suburb": "Huskisson",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.04400909,
+    "lng": 150.6760957
+  },
+  {
+    "name": "Hyams Point Foreshore Reserve",
+    "suburb": "Hyams Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09940028,
+    "lng": 150.693125
+  },
+  {
+    "name": "Cyrus Street Reserve",
+    "suburb": "Hyams Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10352563,
+    "lng": 150.6922291
+  },
+  {
+    "name": "Myola Boat Ramp Reserve",
+    "suburb": "Myola",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01761104,
+    "lng": 150.672466
+  },
+  {
+    "name": "Elsie Young Memorial Park",
+    "suburb": "Old Erowal Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.08650668,
+    "lng": 150.649093
+  },
+  {
+    "name": "Prentice Avenue Reserve, Old Erowal Bay",
+    "suburb": "Old Erowal Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09293433,
+    "lng": 150.647858
+  },
+  {
+    "name": "Kallaroo Foreshore",
+    "suburb": "Erowal Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09662667,
+    "lng": 150.6505571
+  },
+  {
+    "name": "Clifton Park",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10929855,
+    "lng": 150.6254462
+  },
+  {
+    "name": "John Williams Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.11448451,
+    "lng": 150.6390782
+  },
+  {
+    "name": "Links Ave Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.0997888,
+    "lng": 150.6166239
+  },
+  {
+    "name": "Paradise Beach Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.11182356,
+    "lng": 150.6214241
+  },
+  {
+    "name": "Paul Bland Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10644984,
+    "lng": 150.6213168
+  },
+  {
+    "name": "Vost Drive Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09340829,
+    "lng": 150.6232691
+  },
+  {
+    "name": "Yellowbelly Glider Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09562099,
+    "lng": 150.6192728
+  },
+  {
+    "name": "Blacket Park",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09357338,
+    "lng": 150.5950899
+  },
+  {
+    "name": "Kingfisher Park",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10108018,
+    "lng": 150.5958972
+  },
+  {
+    "name": "Loralyn Avenue Reserve",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09899294,
+    "lng": 150.6031305
+  },
+  {
+    "name": "Pangari Reserve",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.08647608,
+    "lng": 150.5961989
+  },
+  {
+    "name": "The Grange Reserve",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09010705,
+    "lng": 150.5895167
+  },
+  {
+    "name": "Church Street Reserve",
+    "suburb": "Tomerong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.05521155,
+    "lng": 150.5870403
+  },
+  {
+    "name": "Vincentia Boat Ramp Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.06953694,
+    "lng": 150.6794003
+  },
+  {
+    "name": "Connolly Street Reserve",
+    "suburb": "Tomerong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.05552378,
+    "lng": 150.5902715
+  },
+  {
+    "name": "llawarra Escarpment Walking Track",
+    "suburb": "Bundewallah",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.74197226,
+    "lng": 150.6593402
+  },
+  {
+    "name": "Jim Cater - Sussex Inlet Waterfront Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.15399076,
+    "lng": 150.5994357
+  },
+  {
+    "name": "Grass Tree Reserve",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09102147,
+    "lng": 150.5975554
+  },
+  {
+    "name": "Copper Leaf Reserve",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89067698,
+    "lng": 150.6273114
+  },
+  {
+    "name": "Edwin Avenue Foreshore Reserve",
+    "suburb": "Lake Conjola",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26739666,
+    "lng": 150.4810682
+  },
+  {
+    "name": "Carinya Crescent Reserve",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.3137949,
+    "lng": 150.4634205
+  },
+  {
+    "name": "Bonnie Troon Reserve",
+    "suburb": "Dolphin Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.39545783,
+    "lng": 150.4421124
+  },
+  {
+    "name": "Currarong Parkway Reserve",
+    "suburb": "Currarong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01659534,
+    "lng": 150.8234639
+  },
+  {
+    "name": "Village Green, Ulladulla",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34961896,
+    "lng": 150.4620478
+  },
+  {
+    "name": "Pengana Crescent Reserve",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34293354,
+    "lng": 150.4663209
+  },
+  {
+    "name": "Borrowdale Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.79450032,
+    "lng": 150.7198879
+  },
+  {
+    "name": "Callala Beach Road Reserve",
+    "suburb": "Callala Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.00960628,
+    "lng": 150.6994405
+  },
+  {
+    "name": "Terara Reserve",
+    "suburb": "Terara",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86455988,
+    "lng": 150.6151041
+  },
+  {
+    "name": "Edward Street Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77609542,
+    "lng": 150.6918406
+  },
+  {
+    "name": "Halloran Street Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.06850776,
+    "lng": 150.6500174
+  },
+  {
+    "name": "Blue Wren Retreat",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.08657905,
+    "lng": 150.5981137
+  },
+  {
+    "name": "Bomaderry Lions Park",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8570215,
+    "lng": 150.6072615
+  },
+  {
+    "name": "Harbord Street Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16238497,
+    "lng": 150.5980019
+  },
+  {
+    "name": "Sanctuary Point Foreshore Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.11009919,
+    "lng": 150.6384239
+  },
+  {
+    "name": "Parker Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77519302,
+    "lng": 150.6780466
+  },
+  {
+    "name": "Boobook Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10551875,
+    "lng": 150.6392019
+  },
+  {
+    "name": "Beach Street Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.06448884,
+    "lng": 150.6728163
+  },
+  {
+    "name": "Twin Waters Reserve",
+    "suburb": "South Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.91284779,
+    "lng": 150.6155443
+  },
+  {
+    "name": "Sandmines Reserve Walking Track",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.53069544,
+    "lng": 150.395183
+  },
+  {
+    "name": "Bernie Davis Reserve",
+    "suburb": "Erowal Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10511301,
+    "lng": 150.6584394
+  },
+  {
+    "name": "Bicentennial Park",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.00608247,
+    "lng": 150.7185604
+  },
+  {
+    "name": "Callala Point Foreshore",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.00568834,
+    "lng": 150.7230113
+  },
+  {
+    "name": "Ocean Street Reserve",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.9316551,
+    "lng": 150.7724244
+  },
+  {
+    "name": "Liberty Park",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90426855,
+    "lng": 150.6289806
+  },
+  {
+    "name": "Inyadda Point Foreshore",
+    "suburb": "Manyana",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.25866942,
+    "lng": 150.5195662
+  },
+  {
+    "name": "Greenwell Point ANZAC Park",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90830809,
+    "lng": 150.7351745
+  },
+  {
+    "name": "Centre Street Reserve",
+    "suburb": "Callala Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01217951,
+    "lng": 150.6936888
+  },
+  {
+    "name": "Greville Corner",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.1155145,
+    "lng": 150.6376513
+  },
+  {
+    "name": "Summercloud Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.06645738,
+    "lng": 150.6532744
+  },
+  {
+    "name": "Gumley Reserve",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85090842,
+    "lng": 150.749469
+  },
+  {
+    "name": "Auster Crescent Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10244191,
+    "lng": 150.6338365
+  },
+  {
+    "name": "Village Green, Milton",
+    "suburb": "Milton",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31748516,
+    "lng": 150.436312
+  },
+  {
+    "name": "Weeroona Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89364662,
+    "lng": 150.6080095
+  },
+  {
+    "name": "Parkes Crescent Circle Reserve",
+    "suburb": "Callala Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.00963286,
+    "lng": 150.6968433
+  },
+  {
+    "name": "Duck Island Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16397386,
+    "lng": 150.593212
+  },
+  {
+    "name": "Burrill Lake Oceans Reserve",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.38365386,
+    "lng": 150.4567114
+  },
+  {
+    "name": "Latta Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.33148296,
+    "lng": 150.4695311
+  },
+  {
+    "name": "Whitshed Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07669295,
+    "lng": 150.6772156
+  },
+  {
+    "name": "Augusta Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32765223,
+    "lng": 150.4682119
+  },
+  {
+    "name": "Carroll Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.3282723,
+    "lng": 150.472564
+  },
+  {
+    "name": "Sussex Inlet Lions Park",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.1702763,
+    "lng": 150.5916337
+  },
+  {
+    "name": "River Road Reserve, Sussex Inlet",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.14457458,
+    "lng": 150.5895902
+  },
+  {
+    "name": "Fairview Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.14548499,
+    "lng": 150.5920882
+  },
+  {
+    "name": "Tradewinds Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.15074495,
+    "lng": 150.5921925
+  },
+  {
+    "name": "Flood Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16112095,
+    "lng": 150.5783889
+  },
+  {
+    "name": "Cater Reserve (1)",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.16332545,
+    "lng": 150.5900209
+  },
+  {
+    "name": "Hollingsworth Reserve",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.99045777,
+    "lng": 150.7169392
+  },
+  {
+    "name": "Nowra Cemetery Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88790672,
+    "lng": 150.6011581
+  },
+  {
+    "name": "Morris Street Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.35733918,
+    "lng": 150.4650991
+  },
+  {
+    "name": "Lyrebird Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86856436,
+    "lng": 150.6077148
+  },
+  {
+    "name": "Rennies Beach Steps",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.36627241,
+    "lng": 150.4795413
+  },
+  {
+    "name": "Warden Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34319792,
+    "lng": 150.4640062
+  },
+  {
+    "name": "Rendal Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86172984,
+    "lng": 150.584571
+  },
+  {
+    "name": "Peak Green Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86146736,
+    "lng": 150.5831363
+  },
+  {
+    "name": "Peak Avenue Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8615102,
+    "lng": 150.5861294
+  },
+  {
+    "name": "Walsh Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86116028,
+    "lng": 150.5962655
+  },
+  {
+    "name": "Kangaroo Valley Pump Track",
+    "suburb": "Kangaroo Valley",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.72497271,
+    "lng": 150.5217954
+  },
+  {
+    "name": "Racecourse Beach Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.375575,
+    "lng": 150.4682581
+  },
+  {
+    "name": "Karana Reserve",
+    "suburb": "Bangalee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8461978,
+    "lng": 150.5717041
+  },
+  {
+    "name": "Fred Evans Park",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.92869508,
+    "lng": 150.7628952
+  },
+  {
+    "name": "Broughton Creek Boat Ramp",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.7899913,
+    "lng": 150.6965191
+  },
+  {
+    "name": "Bolong Foreshore Reserve",
+    "suburb": "Bolong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85264193,
+    "lng": 150.6721924
+  },
+  {
+    "name": "Melaleuca Place Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84218165,
+    "lng": 150.5967359
+  },
+  {
+    "name": "Wilkins Street Reserve",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90658216,
+    "lng": 150.7321934
+  },
+  {
+    "name": "Roseville Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8376557,
+    "lng": 150.6150535
+  },
+  {
+    "name": "Murrell Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8680082,
+    "lng": 150.566625
+  },
+  {
+    "name": "Nellore Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85490859,
+    "lng": 150.5739095
+  },
+  {
+    "name": "Chebec Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84768311,
+    "lng": 150.5966989
+  },
+  {
+    "name": "Kinghorne Point Reserve",
+    "suburb": "Kinghorne",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.95943013,
+    "lng": 150.7760085
+  },
+  {
+    "name": "Ettrick Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84346977,
+    "lng": 150.6065442
+  },
+  {
+    "name": "Hibiscus Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8349107,
+    "lng": 150.601625
+  },
+  {
+    "name": "Greenwell Point Foreshore Reserve",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90246174,
+    "lng": 150.7311983
+  },
+  {
+    "name": "Sunbird Reserve",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.51862131,
+    "lng": 150.3933346
+  },
+  {
+    "name": "Ray Brooks Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.11560282,
+    "lng": 150.6357896
+  },
+  {
+    "name": "Broughton Vale Reserve",
+    "suburb": "Broughton Vale",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.73666694,
+    "lng": 150.7057398
+  },
+  {
+    "name": "Banool Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83651531,
+    "lng": 150.6108543
+  },
+  {
+    "name": "Bindon Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83902924,
+    "lng": 150.6065807
+  },
+  {
+    "name": "Ormonde Reserve",
+    "suburb": "Orient Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.91023744,
+    "lng": 150.7446862
+  },
+  {
+    "name": "Boran Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77323389,
+    "lng": 150.6824067
+  },
+  {
+    "name": "Orient Point Reserve",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.91455867,
+    "lng": 150.7607079
+  },
+  {
+    "name": "Princess Street Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77604479,
+    "lng": 150.6950295
+  },
+  {
+    "name": "Edwin Reserve",
+    "suburb": "Lake Conjola",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26855454,
+    "lng": 150.4818956
+  },
+  {
+    "name": "Irwin Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07523857,
+    "lng": 150.6784758
+  },
+  {
+    "name": "Prowse Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07973077,
+    "lng": 150.6838833
+  },
+  {
+    "name": "Brace Reserve",
+    "suburb": "Kioloa",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.56183234,
+    "lng": 150.3704316
+  },
+  {
+    "name": "Anston Street Reserve",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09163235,
+    "lng": 150.6016583
+  },
+  {
+    "name": "Ireland Reserve",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.38109649,
+    "lng": 150.4390951
+  },
+  {
+    "name": "Honeysuckle Reserve",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.38201329,
+    "lng": 150.4372827
+  },
+  {
+    "name": "Durnford Reserve",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09294287,
+    "lng": 150.6013544
+  },
+  {
+    "name": "Thistleton Reserve",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.38625651,
+    "lng": 150.4447889
+  },
+  {
+    "name": "Tallwood Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32329048,
+    "lng": 150.4757764
+  },
+  {
+    "name": "Clissold Reserve (2)",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34583768,
+    "lng": 150.4715917
+  },
+  {
+    "name": "Clissold Reserve (1)",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34504367,
+    "lng": 150.4724401
+  },
+  {
+    "name": "Davies Reserve",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.3414039,
+    "lng": 150.4708581
+  },
+  {
+    "name": "Hilltop Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32045875,
+    "lng": 150.4711225
+  },
+  {
+    "name": "Ingold Aveune Reserve",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34031776,
+    "lng": 150.4721735
+  },
+  {
+    "name": "Miles Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.33376338,
+    "lng": 150.4601983
+  },
+  {
+    "name": "Kendall Crescent Boat Ramp",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.38156807,
+    "lng": 150.4471719
+  },
+  {
+    "name": "Mollymook Golf Club Foreshore",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.33982241,
+    "lng": 150.4745419
+  },
+  {
+    "name": "Huntingdale Reserve",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.33509364,
+    "lng": 150.4596699
+  },
+  {
+    "name": "Settlers Reserve",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.33689077,
+    "lng": 150.4609025
+  },
+  {
+    "name": "Lulworth Reserve",
+    "suburb": "Lake Tabourie",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.43611215,
+    "lng": 150.4052454
+  },
+  {
+    "name": "Lyra Reserve",
+    "suburb": "Lake Tabourie",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.44191862,
+    "lng": 150.3956327
+  },
+  {
+    "name": "Benalla Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.35743082,
+    "lng": 150.4624401
+  },
+  {
+    "name": "Belowra Close Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34994449,
+    "lng": 150.4603755
+  },
+  {
+    "name": "Parson Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.36503186,
+    "lng": 150.475112
+  },
+  {
+    "name": "Correa Reserve",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89704432,
+    "lng": 150.6306138
+  },
+  {
+    "name": "Orama Crescent Reserve",
+    "suburb": "Orient Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90744515,
+    "lng": 150.74472
+  },
+  {
+    "name": "Kalandar Street Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88624182,
+    "lng": 150.6065984
+  },
+  {
+    "name": "Arunta Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88796976,
+    "lng": 150.6113653
+  },
+  {
+    "name": "Graham Street Rest Area",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.87205309,
+    "lng": 150.6021943
+  },
+  {
+    "name": "Albatross Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88879905,
+    "lng": 150.5975142
+  },
+  {
+    "name": "Dobbie Close Reserve",
+    "suburb": "West Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89210797,
+    "lng": 150.5932051
+  },
+  {
+    "name": "Maromattes Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8648819,
+    "lng": 150.6073757
+  },
+  {
+    "name": "Rouken Glen Reserve",
+    "suburb": "West Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89393673,
+    "lng": 150.5866037
+  },
+  {
+    "name": "Lee Park",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85996058,
+    "lng": 150.5848774
+  },
+  {
+    "name": "McMahons Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86107783,
+    "lng": 150.5715079
+  },
+  {
+    "name": "River Road Caravan Park Foreshore",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85424391,
+    "lng": 150.7457377
+  },
+  {
+    "name": "Burrill Lake Lions Park",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.39081546,
+    "lng": 150.4450918
+  },
+  {
+    "name": "Forster Reserve",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.52008958,
+    "lng": 150.3924597
+  },
+  {
+    "name": "Narrawallee Park",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31221718,
+    "lng": 150.4702127
+  },
+  {
+    "name": "Green Street Reserve",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.35642481,
+    "lng": 150.4722429
+  },
+  {
+    "name": "Ulladulla Walkway",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.358238,
+    "lng": 150.4760333
+  },
+  {
+    "name": "Crookhaven Park",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.9037037,
+    "lng": 150.7666868
+  },
+  {
+    "name": "Kioloa Boat Ramp",
+    "suburb": "Kioloa",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.55830731,
+    "lng": 150.3824686
+  },
+  {
+    "name": "Howell Faulks Park",
+    "suburb": "Cambewarra Village",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.81807743,
+    "lng": 150.5589132
+  },
+  {
+    "name": "Bomaderry CBD Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85445615,
+    "lng": 150.6084476
+  },
+  {
+    "name": "Walsh Reserve North",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85771005,
+    "lng": 150.5915823
+  },
+  {
+    "name": "Emerson Street Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85104996,
+    "lng": 150.5807319
+  },
+  {
+    "name": "Moondara Reserve",
+    "suburb": "Bangalee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84626943,
+    "lng": 150.5648616
+  },
+  {
+    "name": "Gypsy Point Reserve",
+    "suburb": "Bangalee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84324563,
+    "lng": 150.5555073
+  },
+  {
+    "name": "Koloona-Bangalee Reserve",
+    "suburb": "Tapitallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8385837,
+    "lng": 150.5397613
+  },
+  {
+    "name": "Candlebark Reserve",
+    "suburb": "West Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89438529,
+    "lng": 150.5848343
+  },
+  {
+    "name": "Lakeside Park Reserve",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.93530415,
+    "lng": 150.7646391
+  },
+  {
+    "name": "Warrain Reserve",
+    "suburb": "Currarong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01592418,
+    "lng": 150.8196162
+  },
+  {
+    "name": "Penguin Head",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.93084006,
+    "lng": 150.7842877
+  },
+  {
+    "name": "Australia Avenue Reserve",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.99476058,
+    "lng": 150.7183707
+  },
+  {
+    "name": "Hare Bay Reserve",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.99843064,
+    "lng": 150.7245301
+  },
+  {
+    "name": "Palno Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09328148,
+    "lng": 150.6128375
+  },
+  {
+    "name": "Erroll Bond Reserve",
+    "suburb": "Cudmirrah",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.19452548,
+    "lng": 150.5601067
+  },
+  {
+    "name": "Koolyn Reserve",
+    "suburb": "Cudmirrah",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.19919943,
+    "lng": 150.559072
+  },
+  {
+    "name": "Berrara Creek Reserve",
+    "suburb": "Berrara",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.20846538,
+    "lng": 150.5478018
+  },
+  {
+    "name": "Washerwoman Beach Reserve",
+    "suburb": "Bendalong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.24228795,
+    "lng": 150.5307908
+  },
+  {
+    "name": "Sunset Strip Reserve",
+    "suburb": "Manyana",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.25161106,
+    "lng": 150.5280543
+  },
+  {
+    "name": "Cunjurong Point Boat Ramp",
+    "suburb": "Cunjurong Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26513914,
+    "lng": 150.5060701
+  },
+  {
+    "name": "Quebec Street Reserve",
+    "suburb": "Cunjurong Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26311468,
+    "lng": 150.5094795
+  },
+  {
+    "name": "The Parapet Reserve",
+    "suburb": "Manyana",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.25543449,
+    "lng": 150.5144683
+  },
+  {
+    "name": "Berringer Lake Boat Ramp",
+    "suburb": "Berringer Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.25594757,
+    "lng": 150.5000077
+  },
+  {
+    "name": "Wheatley Place Reserve",
+    "suburb": "Conjola Park",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.2624541,
+    "lng": 150.4373105
+  },
+  {
+    "name": "Beach Road Reserve",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32423249,
+    "lng": 150.4814977
+  },
+  {
+    "name": "Victor Avenue Reserve",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31559086,
+    "lng": 150.4709545
+  },
+  {
+    "name": "Surfers Avenue Reserve",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31694791,
+    "lng": 150.4718231
+  },
+  {
+    "name": "Aquarius Reserve",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31951976,
+    "lng": 150.4679327
+  },
+  {
+    "name": "Brodie Park",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.35269218,
+    "lng": 150.4790028
+  },
+  {
+    "name": "Kendall Reserve",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.38243554,
+    "lng": 150.4487125
+  },
+  {
+    "name": "Dolphin Point Reserve",
+    "suburb": "Dolphin Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.39773205,
+    "lng": 150.4470392
+  },
+  {
+    "name": "Central Park",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.39420444,
+    "lng": 150.439342
+  },
+  {
+    "name": "Watts Reserve",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.51173401,
+    "lng": 150.3979616
+  },
+  {
+    "name": "Malibu Reserve",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.51340859,
+    "lng": 150.3988292
+  },
+  {
+    "name": "Murramarang Road Reserve",
+    "suburb": "Kioloa",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.54444967,
+    "lng": 150.3843668
+  },
+  {
+    "name": "Quota Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86783098,
+    "lng": 150.5968157
+  },
+  {
+    "name": "Thora Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.1626707,
+    "lng": 150.596018
+  },
+  {
+    "name": "Sussex Rise Park",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.15943964,
+    "lng": 150.5840357
+  },
+  {
+    "name": "Dyball Reserve",
+    "suburb": "Swanhaven",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.18380797,
+    "lng": 150.5701429
+  },
+  {
+    "name": "Ski Beach Reserve",
+    "suburb": "Swanhaven",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.19288527,
+    "lng": 150.565158
+  },
+  {
+    "name": "Pearl Crescent Reserve",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.17163114,
+    "lng": 150.5695232
+  },
+  {
+    "name": "Horizon Crescent Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07096334,
+    "lng": 150.6577981
+  },
+  {
+    "name": "Mitchell Road Reserve",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.99631723,
+    "lng": 150.7257302
+  },
+  {
+    "name": "Merimbula Street Reserve",
+    "suburb": "Currarong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01718583,
+    "lng": 150.8232585
+  },
+  {
+    "name": "Bevan Creek Foreshore",
+    "suburb": "Coolangatta",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86054711,
+    "lng": 150.7217044
+  },
+  {
+    "name": "Jenanter Reserve",
+    "suburb": "Kangaroo Valley",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.73018054,
+    "lng": 150.5198931
+  },
+  {
+    "name": "Bendeela Reserve",
+    "suburb": "Barrengarry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.71994033,
+    "lng": 150.5241774
+  },
+  {
+    "name": "Rendga Reserve",
+    "suburb": "Kangaroo Valley",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.73567559,
+    "lng": 150.524211
+  },
+  {
+    "name": "Magnolia Grove Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83457387,
+    "lng": 150.6019797
+  },
+  {
+    "name": "Paradise Beach Road Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10288029,
+    "lng": 150.6298359
+  },
+  {
+    "name": "Kennedy Crescent Reserve",
+    "suburb": "Milton",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31546307,
+    "lng": 150.4296967
+  },
+  {
+    "name": "Collers Beach Reserve",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34584609,
+    "lng": 150.4752502
+  },
+  {
+    "name": "Koloona-Illaroo Reserve",
+    "suburb": "Tapitallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83260557,
+    "lng": 150.5439635
+  },
+  {
+    "name": "Tarawal Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.848388,
+    "lng": 150.6018958
+  },
+  {
+    "name": "Rock Hill Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86076893,
+    "lng": 150.5681105
+  },
+  {
+    "name": "Rayleigh Gardens Park",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89014648,
+    "lng": 150.6235613
+  },
+  {
+    "name": "Wairo Beach Reserve",
+    "suburb": "Lake Tabourie",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.44215375,
+    "lng": 150.4076794
+  },
+  {
+    "name": "Sheraton Garden Park",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83273884,
+    "lng": 150.5994068
+  },
+  {
+    "name": "Antares Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89388956,
+    "lng": 150.6171953
+  },
+  {
+    "name": "Paluma Avenue Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89274768,
+    "lng": 150.6173023
+  },
+  {
+    "name": "Bateman Close",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89120032,
+    "lng": 150.6181901
+  },
+  {
+    "name": "Ascalon Close Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89072976,
+    "lng": 150.6177358
+  },
+  {
+    "name": "Lions Peace Park",
+    "suburb": "Sussex Inlet",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.15646463,
+    "lng": 150.6001415
+  },
+  {
+    "name": "Mitchell Parade Foreshore",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.33101878,
+    "lng": 150.4750649
+  },
+  {
+    "name": "Junction Court Mall",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.87470795,
+    "lng": 150.6033732
+  },
+  {
+    "name": "Lancaster Drive Reserve",
+    "suburb": "Badagarang",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.82911983,
+    "lng": 150.5744451
+  },
+  {
+    "name": "Nineveh Close",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.88989676,
+    "lng": 150.6149862
+  },
+  {
+    "name": "Ratcliffe Park",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8901045,
+    "lng": 150.6188845
+  },
+  {
+    "name": "The Garden Walk",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89431033,
+    "lng": 150.6284353
+  },
+  {
+    "name": "Sophia Reserve",
+    "suburb": "Worrigee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89831813,
+    "lng": 150.6246132
+  },
+  {
+    "name": "Moss Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.87032777,
+    "lng": 150.6097673
+  },
+  {
+    "name": "Nowra Bus Terminal",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.87519357,
+    "lng": 150.6017473
+  },
+  {
+    "name": "Beach-Edward Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.06559888,
+    "lng": 150.6725854
+  },
+  {
+    "name": "Hampden Bridge Reserve",
+    "suburb": "Kangaroo Valley",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.72785042,
+    "lng": 150.5217089
+  },
+  {
+    "name": "Hitchcocks Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.7746927,
+    "lng": 150.6770987
+  },
+  {
+    "name": "Huntingdale Park",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.7757646,
+    "lng": 150.6824056
+  },
+  {
+    "name": "Connors Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77263322,
+    "lng": 150.6801886
+  },
+  {
+    "name": "Alata Crescent Reserve",
+    "suburb": "South Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.91008697,
+    "lng": 150.6176728
+  },
+  {
+    "name": "Violet Clark Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07111403,
+    "lng": 150.6784815
+  },
+  {
+    "name": "Main Road Reserve",
+    "suburb": "Cambewarra Village",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.82501151,
+    "lng": 150.561219
+  },
+  {
+    "name": "Carrington Park Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.89484256,
+    "lng": 150.6181071
+  },
+  {
+    "name": "Lousia Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07881879,
+    "lng": 150.6819317
+  },
+  {
+    "name": "Johnston Reserve",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.50496835,
+    "lng": 150.3909287
+  },
+  {
+    "name": "Thompsons Point Reserve",
+    "suburb": "Mundamia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.87237474,
+    "lng": 150.5756618
+  },
+  {
+    "name": "Jerry Bailey Reserve",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8534903,
+    "lng": 150.7487261
+  },
+  {
+    "name": "Mahogony Creek Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85497313,
+    "lng": 150.5784969
+  },
+  {
+    "name": "The Grotto",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86541082,
+    "lng": 150.5769873
+  },
+  {
+    "name": "Bawley Point Reserve",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.50644848,
+    "lng": 150.3962245
+  },
+  {
+    "name": "Aboriginal Cave Reserve",
+    "suburb": "Burrill Lake",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.38884823,
+    "lng": 150.4352727
+  },
+  {
+    "name": "Conjola Creek Riparian",
+    "suburb": "Fishermans Paradise",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.23618747,
+    "lng": 150.4483673
+  },
+  {
+    "name": "Bannisters Point",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32461684,
+    "lng": 150.4843267
+  },
+  {
+    "name": "Garrad Reserve",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.30768063,
+    "lng": 150.4615468
+  },
+  {
+    "name": "Buchan Street Reserve",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34863553,
+    "lng": 150.4774006
+  },
+  {
+    "name": "Callala Creek North Bushland Reserve",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.00048667,
+    "lng": 150.7147984
+  },
+  {
+    "name": "Wowley Creek Reserve",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.99545031,
+    "lng": 150.7272424
+  },
+  {
+    "name": "Currarong Beach Foreshore",
+    "suburb": "Currarong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01456363,
+    "lng": 150.8149216
+  },
+  {
+    "name": "Myola Beach Reserve",
+    "suburb": "Myola",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.02199628,
+    "lng": 150.6786371
+  },
+  {
+    "name": "Tilbury Cove Reserve",
+    "suburb": "",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.93224007,
+    "lng": 150.7765458
+  },
+  {
+    "name": "Conjola Beach Reserve",
+    "suburb": "Lake Conjola",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.27318954,
+    "lng": 150.4950178
+  },
+  {
+    "name": "Washerwoman Beach Reserve",
+    "suburb": "Bendalong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.24282622,
+    "lng": 150.5316913
+  },
+  {
+    "name": "Bomaderry Creek Reserve",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8511961,
+    "lng": 150.5938351
+  },
+  {
+    "name": "Lakeside Park Reserve",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.93756137,
+    "lng": 150.769304
+  },
+  {
+    "name": "Blenheim Beach Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.08386964,
+    "lng": 150.6908968
+  },
+  {
+    "name": "Milton School Rainforest",
+    "suburb": "Milton",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31258676,
+    "lng": 150.4356572
+  },
+  {
+    "name": "North Head",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.35216269,
+    "lng": 150.4824011
+  },
+  {
+    "name": "Mollymook Beach Foreshore",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32884631,
+    "lng": 150.4766765
+  },
+  {
+    "name": "Macleans Point Foreshore",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.11529796,
+    "lng": 150.6183407
+  },
+  {
+    "name": "Wirreecoo Trail",
+    "suburb": "Huskisson",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.02945953,
+    "lng": 150.6688002
+  },
+  {
+    "name": "Cudmirrah Beach Foreshore",
+    "suburb": "Swanhaven",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.19093786,
+    "lng": 150.5721441
+  },
+  {
+    "name": "Orion Beach Foreshore",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07137256,
+    "lng": 150.6868928
+  },
+  {
+    "name": "Culburra Beach Foreshore",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.92277401,
+    "lng": 150.7671378
+  },
+  {
+    "name": "Bawley Point Wetland",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.5107841,
+    "lng": 150.39431
+  },
+  {
+    "name": "Weiro Beach Reserve",
+    "suburb": "Lake Tabourie",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.42997682,
+    "lng": 150.4135088
+  },
+  {
+    "name": "South Headland",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.36227954,
+    "lng": 150.486197
+  },
+  {
+    "name": "Orient Point Wetland",
+    "suburb": "Orient Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90940474,
+    "lng": 150.7408105
+  },
+  {
+    "name": "Abrahams Bosom Reserve",
+    "suburb": "Beecroft Peninsula",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01075703,
+    "lng": 150.8379416
+  },
+  {
+    "name": "Basin View Foreshore",
+    "suburb": "Basin View",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.09533007,
+    "lng": 150.5574526
+  },
+  {
+    "name": "Eastbourne Reserve",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.93794362,
+    "lng": 150.7770324
+  },
+  {
+    "name": "Tabourie Inlet - Beach Street Reserve",
+    "suburb": "Lake Tabourie",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.44401243,
+    "lng": 150.404605
+  },
+  {
+    "name": "O'Hara Headland",
+    "suburb": "Kioloa",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.56042842,
+    "lng": 150.384329
+  },
+  {
+    "name": "Crookhaven Head",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90214225,
+    "lng": 150.7678682
+  },
+  {
+    "name": "Penguin Cove",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.9346068,
+    "lng": 150.7787211
+  },
+  {
+    "name": "Callala Creek South Bushland Reserve",
+    "suburb": "Callala Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.00646366,
+    "lng": 150.7107306
+  },
+  {
+    "name": "Bendalong Point Foreshore",
+    "suburb": "Bendalong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.24876798,
+    "lng": 150.534596
+  },
+  {
+    "name": "Narrawallee Foreshore Reserve",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.31108089,
+    "lng": 150.4716725
+  },
+  {
+    "name": "Narrawallee Headland",
+    "suburb": "Narrawallee",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.3039623,
+    "lng": 150.4747284
+  },
+  {
+    "name": "Bannister Headland",
+    "suburb": "Mollymook Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.32038913,
+    "lng": 150.4785108
+  },
+  {
+    "name": "Rennies Beach Foreshore",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.36581992,
+    "lng": 150.485109
+  },
+  {
+    "name": "South Pacific Crescent Foreshore",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.37474075,
+    "lng": 150.4704942
+  },
+  {
+    "name": "Dolphin Point Reserve",
+    "suburb": "Dolphin Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.3982108,
+    "lng": 150.4472854
+  },
+  {
+    "name": "Malibu Reserve-Gannet & Murramurrang Bea",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.51736144,
+    "lng": 150.3991921
+  },
+  {
+    "name": "Loralyn/Walmer Point Foreshore",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10264067,
+    "lng": 150.6141498
+  },
+  {
+    "name": "Paradise Beach Foreshore",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10926592,
+    "lng": 150.6216288
+  },
+  {
+    "name": "Ray Brookes Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.11548574,
+    "lng": 150.6289643
+  },
+  {
+    "name": "Summercloud Bushland",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.0695795,
+    "lng": 150.6527678
+  },
+  {
+    "name": "Stuart King Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07886989,
+    "lng": 150.6918722
+  },
+  {
+    "name": "Nelson Beach Foreshore",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.07316039,
+    "lng": 150.694802
+  },
+  {
+    "name": "Collingwood Beach Foreshore",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.06082704,
+    "lng": 150.6751475
+  },
+  {
+    "name": "Sharknet Beach Foreshore",
+    "suburb": "Huskisson",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.04083332,
+    "lng": 150.6742829
+  },
+  {
+    "name": "Nowra Creek Reserve",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8802954,
+    "lng": 150.5907639
+  },
+  {
+    "name": "Millards Ck Reserve (Ulladulla Cycleway)",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.35060222,
+    "lng": 150.4674548
+  },
+  {
+    "name": "Hyams Beach Foreshore Reserve",
+    "suburb": "Hyams Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10406771,
+    "lng": 150.6919944
+  },
+  {
+    "name": "Collers Beach Foreshore",
+    "suburb": "Mollymook",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.34708388,
+    "lng": 150.4762812
+  },
+  {
+    "name": "Koloona Reserve",
+    "suburb": "Watersleigh",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85277583,
+    "lng": 150.5322592
+  },
+  {
+    "name": "Pulpit Hill Reserve",
+    "suburb": "Bamarang",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90081937,
+    "lng": 150.5026132
+  },
+  {
+    "name": "Merry Beach Foreshore",
+    "suburb": "Kioloa",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.56372104,
+    "lng": 150.3740202
+  },
+  {
+    "name": "Cunjurong Point Reserve",
+    "suburb": "Cunjurong Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26572084,
+    "lng": 150.5111041
+  },
+  {
+    "name": "Willinga Point",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.50268151,
+    "lng": 150.3893641
+  },
+  {
+    "name": "North Nowra Rotary Park",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86235504,
+    "lng": 150.5993356
+  },
+  {
+    "name": "Wippinguy Reserve",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.50908094,
+    "lng": 150.3959587
+  },
+  {
+    "name": "Admiralty Crescent Coastal Patrol Jetty",
+    "suburb": "Huskisson",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.03654339,
+    "lng": 150.6695792
+  },
+  {
+    "name": "Back Forest Road Boat Ramp",
+    "suburb": "Back Forest",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.84703599,
+    "lng": 150.6754786
+  },
+  {
+    "name": "Wandandian Creek Access",
+    "suburb": "Bewong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.08568838,
+    "lng": 150.5299249
+  },
+  {
+    "name": "Woolamia Boat Ramp",
+    "suburb": "Woollamia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.02574147,
+    "lng": 150.6660018
+  },
+  {
+    "name": "Huskisson Wharf",
+    "suburb": "Huskisson",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.03795619,
+    "lng": 150.6709213
+  },
+  {
+    "name": "Greenwell Point Slipway",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90326562,
+    "lng": 150.7272314
+  },
+  {
+    "name": "Jervis Street Public Wharf",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90932695,
+    "lng": 150.7311457
+  },
+  {
+    "name": "Fishermans Wharf",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90725304,
+    "lng": 150.7361828
+  },
+  {
+    "name": "Titania Park Boat Ramp",
+    "suburb": "Greenwell Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90564985,
+    "lng": 150.735008
+  },
+  {
+    "name": "Crookhaven Park Boat Ramp",
+    "suburb": "Culburra Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.90559054,
+    "lng": 150.761327
+  },
+  {
+    "name": "Progress Park",
+    "suburb": "Callala Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.00077481,
+    "lng": 150.7245042
+  },
+  {
+    "name": "Greys Beach Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8631627,
+    "lng": 150.5971422
+  },
+  {
+    "name": "Nowra Wharf",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86506488,
+    "lng": 150.602809
+  },
+  {
+    "name": "Havilland Street Boat Ramp",
+    "suburb": "Conjola Park",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.26153729,
+    "lng": 150.4444838
+  },
+  {
+    "name": "Paringa Park Maritime Precinct",
+    "suburb": "Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86709575,
+    "lng": 150.59681
+  },
+  {
+    "name": "Currarong Boatramp",
+    "suburb": "Currarong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.01332741,
+    "lng": 150.824376
+  },
+  {
+    "name": "Hay Avenue Boat Ramp",
+    "suburb": "Shoalhaven Heads",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85989404,
+    "lng": 150.7310895
+  },
+  {
+    "name": "Robert Lonesborough Reserve",
+    "suburb": "Orient Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.91182716,
+    "lng": 150.744739
+  },
+  {
+    "name": "Wrights Beach Boat Ramp Reserve",
+    "suburb": "Wrights Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.11321444,
+    "lng": 150.6600859
+  },
+  {
+    "name": "Station Reserve",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.78051604,
+    "lng": 150.6943945
+  },
+  {
+    "name": "Philip Drive Reserve",
+    "suburb": "North Nowra",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.85792397,
+    "lng": 150.5906506
+  },
+  {
+    "name": "River Road (Saltwater Creek) Reserve",
+    "suburb": "Lake Tabourie",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.44340749,
+    "lng": 150.3989483
+  },
+  {
+    "name": "Huskisson Beach Foreshore",
+    "suburb": "Huskisson",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.04588935,
+    "lng": 150.6759838
+  },
+  {
+    "name": "Blenheim Beach Reserve",
+    "suburb": "Vincentia",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.08177815,
+    "lng": 150.691292
+  },
+  {
+    "name": "Berrara Beach Foreshore",
+    "suburb": "Berrara",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.20840978,
+    "lng": 150.5518053
+  },
+  {
+    "name": "Callala Beach Foreshore",
+    "suburb": "Callala Beach",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.0132772,
+    "lng": 150.692897
+  },
+  {
+    "name": "Dee & Flatrock & Monument Beach",
+    "suburb": "Bendalong",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.23436707,
+    "lng": 150.5298924
+  },
+  {
+    "name": "Hazel Rowbotham Reserve",
+    "suburb": "Fishermans Paradise",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.22780584,
+    "lng": 150.4487877
+  },
+  {
+    "name": "Boat Ramp Reserve",
+    "suburb": "Fishermans Paradise",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.23218265,
+    "lng": 150.4497834
+  },
+  {
+    "name": "Erowal Bay Lions Park",
+    "suburb": "Erowal Bay",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.10208035,
+    "lng": 150.6506529
+  },
+  {
+    "name": "Cudmirrah Beach Reserve",
+    "suburb": "Cudmirrah",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.20312224,
+    "lng": 150.5570313
+  },
+  {
+    "name": "Murramarang - Racecourse Beach",
+    "suburb": "Bawley Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.53934567,
+    "lng": 150.3875104
+  },
+  {
+    "name": "St Georges Basin Lions Park",
+    "suburb": "St Georges Basin",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.08973274,
+    "lng": 150.5978338
+  },
+  {
+    "name": "Numbaa Foreshore Reserve",
+    "suburb": "Numbaa",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.86353047,
+    "lng": 150.6291486
+  },
+  {
+    "name": "Tasman Reserve",
+    "suburb": "Sanctuary Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.08888586,
+    "lng": 150.5959835
+  },
+  {
+    "name": "Wairo Beach Crown Reserve",
+    "suburb": "Dolphin Point",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.40828011,
+    "lng": 150.439268
+  },
+  {
+    "name": "Moss Vale Road URA - Taylors Lane South",
+    "suburb": "Badagarang",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83419105,
+    "lng": 150.5723497
+  },
+  {
+    "name": "Moss Vale Road URA - Taylors Lane West",
+    "suburb": "Badagarang",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.83064181,
+    "lng": 150.5690167
+  },
+  {
+    "name": "Dent Street Paddle Craft Launching Area",
+    "suburb": "Huskisson",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.03407794,
+    "lng": 150.6687593
+  },
+  {
+    "name": "George Street Park",
+    "suburb": "Berry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.77323411,
+    "lng": 150.6890208
+  },
+  {
+    "name": "Waratah Park",
+    "suburb": "Bomaderry",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -34.8536197,
+    "lng": 150.6089794
+  },
+  {
+    "name": "Ulladulla Harbour Destination Park",
+    "suburb": "Ulladulla",
+    "category": "Parks & Open Spaces / Natural Areas",
+    "lat": -35.35628124,
+    "lng": 150.47486
+  },
+  {
+    "name": "Boongaree Sport & Destination Park",
+    "suburb": "Berry",
+    "category": "Regional Parks",
+    "lat": -34.7730258,
+    "lng": 150.7007443
+  },
+  {
+    "name": "Marriott Destination Park",
+    "suburb": "Nowra",
+    "category": "Regional Parks",
+    "lat": -34.87971781,
+    "lng": 150.6034384
+  },
+  {
+    "name": "Mollymook Beach Destination Park",
+    "suburb": "Mollymook",
+    "category": "Regional Parks",
+    "lat": -35.33785414,
+    "lng": 150.4731428
+  },
+  {
+    "name": "Titania Destination Park",
+    "suburb": "Greenwell Point",
+    "category": "Regional Parks",
+    "lat": -34.90538815,
+    "lng": 150.7347179
+  },
+  {
+    "name": "Whitesands Voyager Destination Park",
+    "suburb": "Huskisson",
+    "category": "Regional Parks",
+    "lat": -35.03939983,
+    "lng": 150.6725693
+  },
+  {
+    "name": "Ulladulla Harbour Precinct",
+    "suburb": "Ulladulla",
+    "category": "Regional Parks",
+    "lat": -35.35732422,
+    "lng": 150.4776248
+  },
+  {
+    "name": "Milton Showground",
+    "suburb": "Milton",
+    "category": "Showgrounds",
+    "lat": -35.3206072,
+    "lng": 150.4302622
+  },
+  {
+    "name": "Kangaroo Valley Showground",
+    "suburb": "Kangaroo Valley",
+    "category": "Showgrounds",
+    "lat": -34.73626419,
+    "lng": 150.5360881
+  },
+  {
+    "name": "Berry Showground",
+    "suburb": "Berry",
+    "category": "Showgrounds",
+    "lat": -34.77886526,
+    "lng": 150.6947578
+  },
+  {
+    "name": "Nowra Showground",
+    "suburb": "Nowra",
+    "category": "Showgrounds",
+    "lat": -34.87387691,
+    "lng": 150.591607
+  },
+  {
+    "name": "Bill Andriske Sporting",
+    "suburb": "Mollymook Beach",
+    "category": "Sports Fields & Courts",
+    "lat": -35.32499419,
+    "lng": 150.4748161
+  },
+  {
+    "name": "Finkernagel Reserve Sports",
+    "suburb": "Sussex Inlet",
+    "category": "Sports Fields & Courts",
+    "lat": -35.15892912,
+    "lng": 150.5949456
+  },
+  {
+    "name": "Frogs Holla Sporting Complex",
+    "suburb": "Milton",
+    "category": "Sports Fields & Courts",
+    "lat": -35.3203585,
+    "lng": 150.4501508
+  },
+  {
+    "name": "Kioloa District Sports",
+    "suburb": "Kioloa",
+    "category": "Sports Fields & Courts",
+    "lat": -35.55744593,
+    "lng": 150.3772933
+  },
+  {
+    "name": "Lake Conjola Hall & Tennis",
+    "suburb": "Lake Conjola",
+    "category": "Sports Fields & Courts",
+    "lat": -35.27271701,
+    "lng": 150.488482
+  },
+  {
+    "name": "Conjola Community Tennis (Arthur Jones)",
+    "suburb": "Lake Conjola",
+    "category": "Sports Fields & Courts",
+    "lat": -35.26974428,
+    "lng": 150.4891632
+  },
+  {
+    "name": "Lighthouse Oval",
+    "suburb": "Ulladulla",
+    "category": "Sports Fields & Courts",
+    "lat": -35.36281944,
+    "lng": 150.4828706
+  },
+  {
+    "name": "Milton Tennis Club",
+    "suburb": "Milton",
+    "category": "Sports Fields & Courts",
+    "lat": -35.31950763,
+    "lng": 150.4344886
+  },
+  {
+    "name": "Thomson St Sports & Community",
+    "suburb": "Sussex Inlet",
+    "category": "Sports Fields & Courts",
+    "lat": -35.16478117,
+    "lng": 150.5856235
+  },
+  {
+    "name": "Ulladulla Sports Park Complex",
+    "suburb": "Ulladulla",
+    "category": "Sports Fields & Courts",
+    "lat": -35.36704714,
+    "lng": 150.4643312
+  },
+  {
+    "name": "Wandandian Recreation Sports",
+    "suburb": "Wandandian",
+    "category": "Sports Fields & Courts",
+    "lat": -35.08923638,
+    "lng": 150.5107499
+  },
+  {
+    "name": "Yulunga Reserve Sport & Community Centre",
+    "suburb": "Manyana",
+    "category": "Sports Fields & Courts",
+    "lat": -35.25859771,
+    "lng": 150.5114874
+  },
+  {
+    "name": "Park Road Netball",
+    "suburb": "Nowra",
+    "category": "Sports Fields & Courts",
+    "lat": -34.89655403,
+    "lng": 150.6075224
+  },
+  {
+    "name": "Bomaderry Oval Sports",
+    "suburb": "Bomaderry",
+    "category": "Sports Fields & Courts",
+    "lat": -34.85780327,
+    "lng": 150.6068832
+  },
+  {
+    "name": "Berry Riding Club",
+    "suburb": "Berry",
+    "category": "Sports Fields & Courts",
+    "lat": -34.78284696,
+    "lng": 150.673399
+  },
+  {
+    "name": "Bernie Regan Sports",
+    "suburb": "North Nowra",
+    "category": "Sports Fields & Courts",
+    "lat": -34.84097626,
+    "lng": 150.5767349
+  },
+  {
+    "name": "Crookhaven Park & Tennis",
+    "suburb": "Culburra Beach",
+    "category": "Sports Fields & Courts",
+    "lat": -34.91064276,
+    "lng": 150.7614672
+  },
+  {
+    "name": "Drexel Sports Park",
+    "suburb": "North Nowra",
+    "category": "Sports Fields & Courts",
+    "lat": -34.85784294,
+    "lng": 150.5731054
+  },
+  {
+    "name": "Gordon Ravell Sports",
+    "suburb": "Greenwell Point",
+    "category": "Sports Fields & Courts",
+    "lat": -34.90998154,
+    "lng": 150.7281848
+  },
+  {
+    "name": "Ison Park Sports",
+    "suburb": "South Nowra",
+    "category": "Sports Fields & Courts",
+    "lat": -34.90137,
+    "lng": 150.6052472
+  },
+  {
+    "name": "Lyrebird Park Sports",
+    "suburb": "Nowra",
+    "category": "Sports Fields & Courts",
+    "lat": -34.88390861,
+    "lng": 150.6110612
+  },
+  {
+    "name": "Ray Abood Sports",
+    "suburb": "Cambewarra Village",
+    "category": "Sports Fields & Courts",
+    "lat": -34.8262368,
+    "lng": 150.5556629
+  },
+  {
+    "name": "Artie Smith Oval/Croquet & Bomaderry Sporting Complex (SCaRP)",
+    "suburb": "Bomaderry",
+    "category": "Sports Fields & Courts",
+    "lat": -34.84453559,
+    "lng": 150.6002084
+  },
+  {
+    "name": "Sharman Park Sports",
+    "suburb": "North Nowra",
+    "category": "Sports Fields & Courts",
+    "lat": -34.85815382,
+    "lng": 150.5800758
+  },
+  {
+    "name": "Vic Zealand Tennis Community",
+    "suburb": "Shoalhaven Heads",
+    "category": "Sports Fields & Courts",
+    "lat": -34.84787404,
+    "lng": 150.7408242
+  },
+  {
+    "name": "West St Sports",
+    "suburb": "Nowra",
+    "category": "Sports Fields & Courts",
+    "lat": -34.877895,
+    "lng": 150.59144
+  },
+  {
+    "name": "Jerry Bailey Reserve",
+    "suburb": "Shoalhaven Heads",
+    "category": "Sports Fields & Courts",
+    "lat": -34.85021326,
+    "lng": 150.7465879
+  },
+  {
+    "name": "Kangaroo Valley Tennis",
+    "suburb": "Kangaroo Valley",
+    "category": "Sports Fields & Courts",
+    "lat": -34.73429987,
+    "lng": 150.5288138
+  },
+  {
+    "name": "Narang Road Tennis",
+    "suburb": "Bomaderry",
+    "category": "Sports Fields & Courts",
+    "lat": -34.84397506,
+    "lng": 150.5918633
+  },
+  {
+    "name": "Erowal Bay Tennis",
+    "suburb": "Erowal Bay",
+    "category": "Sports Fields & Courts",
+    "lat": -35.10223599,
+    "lng": 150.6604455
+  },
+  {
+    "name": "Shoalhaven Rugby Park Sports",
+    "suburb": "South Nowra",
+    "category": "Sports Fields & Courts",
+    "lat": -34.90679801,
+    "lng": 150.5948887
+  },
+  {
+    "name": "Sanctuary Point Oval Sports",
+    "suburb": "Sanctuary Point",
+    "category": "Sports Fields & Courts",
+    "lat": -35.09673638,
+    "lng": 150.6322059
+  },
+  {
+    "name": "Callala Bay Sports & Community Centre",
+    "suburb": "Callala Bay",
+    "category": "Sports Fields & Courts",
+    "lat": -34.99630926,
+    "lng": 150.7166687
+  },
+  {
+    "name": "Huskisson Sports & Tennis",
+    "suburb": "Huskisson",
+    "category": "Sports Fields & Courts",
+    "lat": -35.03677329,
+    "lng": 150.6657524
+  },
+  {
+    "name": "Frances Ryan Reserve Sports",
+    "suburb": "Sanctuary Point",
+    "category": "Sports Fields & Courts",
+    "lat": -35.10561011,
+    "lng": 150.626558
+  },
+  {
+    "name": "Elliott Reserve Sports & Tennis",
+    "suburb": "Currarong",
+    "category": "Sports Fields & Courts",
+    "lat": -35.01446658,
+    "lng": 150.8258886
+  },
+  {
+    "name": "Vincentia Sports Complex",
+    "suburb": "Vincentia",
+    "category": "Sports Fields & Courts",
+    "lat": -35.07345584,
+    "lng": 150.6633428
+  },
+  {
+    "name": "St Georges Basin Sports",
+    "suburb": "St Georges Basin",
+    "category": "Sports Fields & Courts",
+    "lat": -35.08766195,
+    "lng": 150.5793932
+  },
+  {
+    "name": "Wool Lane Sporting",
+    "suburb": "Sanctuary Point",
+    "category": "Sports Fields & Courts",
+    "lat": -35.09498968,
+    "lng": 150.610491
+  },
+  {
+    "name": "Worrigee Equestrian Common",
+    "suburb": "Worrigee",
+    "category": "Sports Fields & Courts",
+    "lat": -34.89730248,
+    "lng": 150.637322
+  },
+  {
+    "name": "Cambewarra Pony Club",
+    "suburb": "Bangalee",
+    "category": "Sports Fields & Courts",
+    "lat": -34.83742537,
+    "lng": 150.5529149
+  },
+  {
+    "name": "Milton Pony Club",
+    "suburb": "Mollymook Beach",
+    "category": "Sports Fields & Courts",
+    "lat": -35.32419706,
+    "lng": 150.4619556
+  },
+  {
+    "name": "Shoalhaven Indoor Sports Centre (SCaRP)",
+    "suburb": "Bomaderry",
+    "category": "Sports Fields & Courts",
+    "lat": -34.84674538,
+    "lng": 150.6012987
+  },
+  {
+    "name": "Ulladulla Tennis Centre",
+    "suburb": "Ulladulla",
+    "category": "Sports Fields & Courts",
+    "lat": -35.35641653,
+    "lng": 150.4597834
+  },
+  {
+    "name": "Burrill Lake Sportsground",
+    "suburb": "Burrill Lake",
+    "category": "Sports Fields & Courts",
+    "lat": -35.38497919,
+    "lng": 150.4503582
+  },
+  {
+    "name": "Abrahams Bosom Reserve",
+    "suburb": "Currarong",
+    "category": "Sports Fields & Courts",
+    "lat": -35.01134063,
+    "lng": 150.8268145
+  },
+  {
+    "name": "Nowra Golf Course",
+    "suburb": "North Nowra",
+    "category": "Sports Fields & Courts",
+    "lat": -34.86608974,
+    "lng": 150.5916974
+  },
+  {
+    "name": "St Georges Basin Sailing Club - Ahimsa",
+    "suburb": "Wrights Beach",
+    "category": "Sports Fields & Courts",
+    "lat": -35.1127078,
+    "lng": 150.6600507
+  }
+        ];
+        
+        const categoryIcons = {
+            "Aquatic": {
+                        path: "M309.5 178.4L447.9 297.1c-1.6 .9-3.2 2-4.8 3c-18 12.4-40.1 20.3-59.2 20.3c-19.6 0-40.8-7.7-59.2-20.3c-22.1-15.5-51.6-15.5-73.7 0c-17.1 11.8-38 20.3-59.2 20.3c-10.1 0-21.1-2.2-31.9-6.2C163.1 193.2 262.2 96 384 96l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-26.9 0-52.3 6.6-74.5 18.4zM160 160A64 64 0 1 1 32 160a64 64 0 1 1 128 0zM306.5 325.9C329 341.4 356.5 352 384 352c26.9 0 55.4-10.8 77.4-26.1c0 0 0 0 0 0c11.9-8.5 28.1-7.8 39.2 1.7c14.4 11.9 32.5 21 50.6 25.2c17.2 4 27.9 21.2 23.9 38.4s-21.2 27.9-38.4 23.9c-24.5-5.7-44.9-16.5-58.2-25C449.5 405.7 417 416 384 416c-31.9 0-60.6-9.9-80.4-18.9c-5.8-2.7-11.1-5.3-15.6-7.7c-4.5 2.4-9.7 5.1-15.6 7.7c-19.8 9-48.5 18.9-80.4 18.9c-33 0-65.5-10.3-94.5-25.8c-13.4 8.4-33.7 19.3-58.2 25c-17.2 4-34.4-6.7-38.4-23.9s6.7-34.4 23.9-38.4c18.1-4.2 36.2-13.3 50.6-25.2c11.1-9.4 27.3-10.1 39.2-1.7c0 0 0 0 0 0C136.7 341.2 165.1 352 192 352c27.5 0 55-10.6 77.5-26.1c11.1-7.9 25.9-7.9 37 0z",
+                        transform: "scale(0.03) translate(360, 230)" // translate(x, y): X - high=right, low=left | Y - high=down, low=up
+                    },
+                    "Community Buildings": {
+                        path: "M48 0C21.5 0 0 21.5 0 48L0 464c0 26.5 21.5 48 48 48l96 0 0-80c0-26.5 21.5-48 48-48s48 21.5 48 48l0 80 96 0c26.5 0 48-21.5 48-48l0-416c0-26.5-21.5-48-48-48L48 0zM64 240c0-8.8 7.2-16 16-16l32 0c8.8 0 16 7.2 16 16l0 32c0 8.8-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16l0-32zm112-16l32 0c8.8 0 16 7.2 16 16l0 32c0 8.8-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16l0-32c0-8.8 7.2-16 16-16zm80 16c0-8.8 7.2-16 16-16l32 0c8.8 0 16 7.2 16 16l0 32c0 8.8-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16l0-32zM80 96l32 0c8.8 0 16 7.2 16 16l0 32c0 8.8-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16l0-32c0-8.8 7.2-16 16-16zm80 16c0-8.8 7.2-16 16-16l32 0c8.8 0 16 7.2 16 16l0 32c0 8.8-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16l0-32zM272 96l32 0c8.8 0 16 7.2 16 16l0 32c0 8.8-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16l0-32c0-8.8 7.2-16 16-16z",
+                        transform: "scale(0.03) translate(470, 230)" // translate(x, y): X - high=right, low=left | Y - high=down, low=up
+                    },
+                    "Cultural & Entertainment": {
+                        path: "M74.6 373.2c41.7 36.1 108 82.5 166.1 73.7c6.1-.9 12.1-2.5 18-4.5c-9.2-12.3-17.3-24.4-24.2-35.4c-21.9-35-28.8-75.2-25.9-113.6c-20.6 4.1-39.2 13-54.7 25.4c-6.5 5.2-16.3 1.3-14.8-7c6.4-33.5 33-60.9 68.2-66.3c2.6-.4 5.3-.7 7.9-.8l19.4-131.3c2-13.8 8-32.7 25-45.9C278.2 53.2 310.5 37 363.2 32.2c-.8-.7-1.6-1.4-2.4-2.1C340.6 14.5 288.4-11.5 175.7 5.6S20.5 63 5.7 83.9C0 91.9-.8 102 .6 111.8L24.8 276.1c5.5 37.3 21.5 72.6 49.8 97.2zm87.7-219.6c4.4-3.1 10.8-2 11.8 3.3c.1 .5 .2 1.1 .3 1.6c3.2 21.8-11.6 42-33.1 45.3s-41.5-11.8-44.7-33.5c-.1-.5-.1-1.1-.2-1.6c-.6-5.4 5.2-8.4 10.3-6.7c9 3 18.8 3.9 28.7 2.4s19.1-5.3 26.8-10.8zM261.6 390c29.4 46.9 79.5 110.9 137.6 119.7s124.5-37.5 166.1-73.7c28.3-24.5 44.3-59.8 49.8-97.2l24.2-164.3c1.4-9.8 .6-19.9-5.1-27.9c-14.8-20.9-57.3-61.2-170-78.3S299.4 77.2 279.2 92.8c-7.8 6-11.5 15.4-12.9 25.2L242.1 282.3c-5.5 37.3-.4 75.8 19.6 107.7zM404.5 235.3c-7.7-5.5-16.8-9.3-26.8-10.8s-19.8-.6-28.7 2.4c-5.1 1.7-10.9-1.3-10.3-6.7c.1-.5 .1-1.1 .2-1.6c3.2-21.8 23.2-36.8 44.7-33.5s36.3 23.5 33.1 45.3c-.1 .5-.2 1.1-.3 1.6c-1 5.3-7.4 6.4-11.8 3.3zm136.2 15.5c-1 5.3-7.4 6.4-11.8 3.3c-7.7-5.5-16.8-9.3-26.8-10.8s-19.8-.6-28.7 2.4c-5.1 1.7-10.9-1.3-10.3-6.7c.1-.5 .1-1.1 .2-1.6c3.2-21.8 23.2-36.8 44.7-33.5s36.3 23.5 33.1 45.3c-.1 .5-.2 1.1-.3 1.6zM530 350.2c-19.6 44.7-66.8 72.5-116.8 64.9s-87.1-48.2-93-96.7c-1-8.3 8.9-12.1 15.2-6.7c23.9 20.8 53.6 35.3 87 40.3s66.1 .1 94.9-12.8c7.6-3.4 16 3.2 12.6 10.9z",
+                        transform: "scale(0.03) translate(350, 240)" // translate(x, y): X - high=right, low=left | Y - high=down, low=up
+                    },
+                    "Parks & Open Spaces / Natural Areas": {
+                        path: "M160 48a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zM126.5 199.3c-1 .4-1.9 .8-2.9 1.2l-8 3.5c-16.4 7.3-29 21.2-34.7 38.2l-2.6 7.8c-5.6 16.8-23.7 25.8-40.5 20.2s-25.8-23.7-20.2-40.5l2.6-7.8c11.4-34.1 36.6-61.9 69.4-76.5l8-3.5c20.8-9.2 43.3-14 66.1-14c44.6 0 84.8 26.8 101.9 67.9L281 232.7l21.4 10.7c15.8 7.9 22.2 27.1 14.3 42.9s-27.1 22.2-42.9 14.3L247 287.3c-10.3-5.2-18.4-13.8-22.8-24.5l-9.6-23-19.3 65.5 49.5 54c5.4 5.9 9.2 13 11.2 20.8l23 92.1c4.3 17.1-6.1 34.5-23.3 38.8s-34.5-6.1-38.8-23.3l-22-88.1-70.7-77.1c-14.8-16.1-20.3-38.6-14.7-59.7l16.9-63.5zM68.7 398l25-62.4c2.1 3 4.5 5.8 7 8.6l40.7 44.4-14.5 36.2c-2.4 6-6 11.5-10.6 16.1L54.6 502.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L68.7 398z",
+                        transform: "scale(0.035) translate(400, 150)" // translate(x, y): X - high=right, low=left | Y - high=down, low=up
+                    },
+                    "Showgrounds": {
+                        path: "M499.6 11.3c6.7-10.7 20.5-14.5 31.7-8.5s15.8 19.5 10.6 31L404.8 338.6c2.2 2.3 4.3 4.7 6.3 7.1l97.2-54.7c10.5-5.9 23.6-3.1 30.9 6.4s6.3 23-2.2 31.5l-87 87-71.4 0c-13.2-37.3-48.7-64-90.5-64s-77.4 26.7-90.5 64l-79.6 0L42.3 363.7c-9.7-6.7-13.1-19.6-7.9-30.3s17.4-15.9 28.7-12.4l97.2 30.4c3-3.9 6.1-7.7 9.4-11.3L107.4 236.3c-6.1-10.1-3.9-23.1 5.1-30.7s22.2-7.5 31.1 .1L246 293.6c1.5-.4 3-.8 4.5-1.1l13.6-142.7c1.2-12.3 11.5-21.7 23.9-21.7s22.7 9.4 23.9 21.7l13.5 141.9L499.6 11.3zM64 448s0 0 0 0l448 0s0 0 0 0l32 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 512c-17.7 0-32-14.3-32-32s14.3-32 32-32l32 0zM288 0c13.3 0 24 10.7 24 24l0 48c0 13.3-10.7 24-24 24s-24-10.7-24-24l0-48c0-13.3 10.7-24 24-24z",
+                        transform: "scale(0.03) translate(350, 180)" // translate(x, y): X - high=right, low=left | Y - high=down, low=up
+                    },
+                    "Sports Fields & Courts": {
+                        path: "M86.6 64l85.2 85.2C194.5 121.7 208 86.4 208 48c0-14.7-2-28.9-5.7-42.4C158.6 15 119 35.5 86.6 64zM64 86.6C35.5 119 15 158.6 5.6 202.3C19.1 206 33.3 208 48 208c38.4 0 73.7-13.5 101.3-36.1L64 86.6zM256 0c-7.3 0-14.6 .3-21.8 .9C238 16 240 31.8 240 48c0 47.3-17.1 90.5-45.4 124L256 233.4 425.4 64C380.2 24.2 320.9 0 256 0zM48 240c-16.2 0-32-2-47.1-5.8C.3 241.4 0 248.7 0 256c0 64.9 24.2 124.2 64 169.4L233.4 256 172 194.6C138.5 222.9 95.3 240 48 240zm463.1 37.8c.6-7.2 .9-14.5 .9-21.8c0-64.9-24.2-124.2-64-169.4L278.6 256 340 317.4c33.4-28.3 76.7-45.4 124-45.4c16.2 0 32 2 47.1 5.8zm-4.7 31.9C492.9 306 478.7 304 464 304c-38.4 0-73.7 13.5-101.3 36.1L448 425.4c28.5-32.3 49.1-71.9 58.4-115.7zM340.1 362.7C317.5 390.3 304 425.6 304 464c0 14.7 2 28.9 5.7 42.4C353.4 497 393 476.5 425.4 448l-85.2-85.2zM317.4 340L256 278.6 86.6 448c45.1 39.8 104.4 64 169.4 64c7.3 0 14.6-.3 21.8-.9C274 496 272 480.2 272 464c0-47.3 17.1-90.5 45.4-124z",
+                        transform: "scale(0.03) translate(410, 230)" // translate(x, y): X - high=right, low=left | Y - high=down, low=up
+                    },
+                    "Regional Parks": {
+                        path: "M210.6 5.9L62 169.4c-3.9 4.2-6 9.8-6 15.5C56 197.7 66.3 208 79.1 208l24.9 0L30.6 281.4c-4.2 4.2-6.6 10-6.6 16C24 309.9 34.1 320 46.6 320L80 320 5.4 409.5C1.9 413.7 0 419 0 424.5c0 13 10.5 23.5 23.5 23.5L192 448l0 32c0 17.7 14.3 32 32 32s32-14.3 32-32l0-32 168.5 0c13 0 23.5-10.5 23.5-23.5c0-5.5-1.9-10.8-5.4-15L368 320l33.4 0c12.5 0 22.6-10.1 22.6-22.6c0-6-2.4-11.8-6.6-16L344 208l24.9 0c12.7 0 23.1-10.3 23.1-23.1c0-5.7-2.1-11.3-6-15.5L237.4 5.9C234 2.1 229.1 0 224 0s-10 2.1-13.4 5.9z",
+                        transform: "scale(0.03) translate(440, 210)" // translate(x, y): X - high=right, low=left | Y - high=down, low=up
+                    }
+  };
+  
+  let map;
+          let geocoder;
+          let markers = [];
+          let markerCluster;
+          let selectedCategories = categories.map(cat => cat.name);
+          
+          
+          window.initMap = function() {
+              const mapStyles = [
+                  { featureType: "poi", elementType: "all", stylers: [{ visibility: "off" }] }
+              ];
+              map = new google.maps.Map(document.getElementById("map"), {
+                  zoom: 10,
+                  center: { lat: -34.85, lng: 150.6 },
+                  mapTypeId: "satellite",
+                  mapTypeControl: true,
+                  fullscreenControl: true,
+                  streetViewControl: true,
+                  styles: mapStyles
+              });
+              console.log("Map initialized:", map);
+              geocoder = new google.maps.Geocoder();
+  
+              let previousZoom = map.getZoom();
+              google.maps.event.addListener(map, "zoom_changed", () => {
+                  const currentZoom = map.getZoom();
+                  if (currentZoom < previousZoom) {
+                      markers.forEach(m => {
+                          if (m.infoWindow.getMap()) {
+                              m.infoWindow.close();
+                              console.log(`Closed info window for ${m.name} due to zooming out`);
+                          }
+                      });
+                  }
+                  previousZoom = currentZoom;
+              });
+  
+              const loadingOverlay = document.getElementById("loading-overlay");
+  
+              // Create search control with results list
+              const searchControl = document.createElement("div");
+              searchControl.id = "search-control";
+              const searchInput = document.createElement("input");
+              searchInput.id = "location-search";
+              searchInput.type = "text";
+              searchInput.placeholder = "Search locations...";
+              const searchResultsList = document.createElement("ul");
+              searchResultsList.id = "search-results-list";
+              searchControl.appendChild(searchInput);
+              searchControl.appendChild(searchResultsList);
+              document.getElementById("map").appendChild(searchControl);
+  
+              // Attach search event listeners
+              searchInput.addEventListener("input", () => {
+                  console.log("Search input changed:", searchInput.value);
+                  filterLocations();
+              });
+              searchInput.addEventListener("keydown", (e) => {
+                  if (e.key === "Enter") {
+                      e.preventDefault();
+                      console.log("Enter pressed, filtering locations");
+                      filterLocations();
+                  }
+              });
+  
+              // Move category filters to top of map
+              const categoryFilters = document.getElementById("category-filters");
+              map.controls[google.maps.ControlPosition.TOP_CENTER].push(categoryFilters);
+              createCategoryFilters();
+  
+              Promise.all(locations.map(location => new Promise(resolve => geocodeAddress(location, resolve))))
+                  .then(() => {
+                      markerCluster = new markerClusterer.MarkerClusterer({
+                          map: map,
+                          markers: markers.map(m => m.marker),
+                          renderer: {
+                              render: ({ count, position }) => {
+                                  return new google.maps.Marker({
+                                      label: { text: String(count), color: "white", fontSize: "12px" },
+                                      position,
+                                      icon: {
+                                          url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+                                              <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+                                                  <circle cx="20" cy="20" r="18" fill="#2F2B4E" opacity="0.7"/>
+                                              </svg>
+                                          `),
+                                          scaledSize: new google.maps.Size(40, 40),
+                                          anchor: new google.maps.Point(20, 20)
+                                      },
+                                      zIndex: 1000
+                                  });
+                              }
+                          }
+                      });
+  
+                      markerCluster.addListener("click", (cluster) => {
+                          const bounds = new google.maps.LatLngBounds();
+                          cluster.markers.forEach(marker => bounds.extend(marker.getPosition()));
+                          map.fitBounds(bounds);
+                          map.setZoom(map.getZoom() + 2);
+                      });
+  
+                      loadingOverlay.style.display = "none";
+  
+                      console.log("All markers clustered:", markers);
+                      filterLocations();
+                  })
+                  .catch(error => {
+                      console.error("Error loading markers:", error);
+                      loadingOverlay.querySelector("p").textContent = "Error loading map. Please refresh.";
+                  });
+          };
+  
+          window.onload = function() {
+             
+              console.log("Page loaded, calling initMap...");
+              if (document.readyState === "complete" || document.readyState === "interactive") {
+                  initMap();
+              } else {
+                  document.addEventListener("DOMContentLoaded", initMap);
+              }
+          };
+  
+          function getCategoryInfo(categoryName) {
+              return categories.find(c => c.name === categoryName) || { class: "default", color: "#555555" };
+          }
+  
+          function geocodeAddress(location, callback) {
+              const categoryInfo = getCategoryInfo(location.category);
+              const iconData = categoryIcons[location.category] || categoryIcons["Aquatic"];
+              const pinSvg = `
+                  <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="20" cy="15" r="14" fill="${categoryInfo.color}" stroke="#ffffff" stroke-width="2"/>
+                      <path d="M14 29Q17 30 20 36Q23 30 26 29Q24 28 14 29Z" fill="#ffffff" stroke="#ffffff" stroke-width="2"/>
+                      <path transform="${iconData.transform}" fill="#ffffff" d="${iconData.path}"/>
+                  </svg>
+              `;
+  
+              if (location.lat !== undefined && location.lng !== undefined) {
+                  console.log("Using coords for", location.name, location.lat, location.lng);
+                  const position = new google.maps.LatLng(location.lat, location.lng);
+                  createMarker(position, location, pinSvg, callback);
+              } else if (location.address) {
+                  geocoder.geocode({ address: location.address }, (results, status) => {
+                      if (status === "OK") {
+                          const position = results[0].geometry.location;
+                          createMarker(position, location, pinSvg, callback);
+                      } else {
+                          console.error(`Geocode failed for ${location.address}: ${status}`);
+                          if (callback) callback();
+                      }
+                  });
+              } else {
+                  console.warn(`No coordinates or address for ${location.name} - marker not created`);
+                  if (callback) callback();
+              }
+  
+              function createMarker(position, location, pinSvg, callback) {
+                  const marker = new google.maps.Marker({
+                      map: map,
+                      position: position,
+                      title: location.name,
+                      icon: {
+                          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(pinSvg),
+                          scaledSize: new google.maps.Size(40, 40),
+                          anchor: new google.maps.Point(20, 40)
+                      }
+                  });
+  
+                  const infoWindowContent = `
+                      <div class="info-window">
+                          <h3>${location.name}</h3>
+                          <p>${location.suburb}</p>
+                          <span class="location-category ${categoryInfo.class}" style="background-color: ${categoryInfo.color}; padding: 4px 8px;">${location.category}</span>
+                          <p></p>
+                          <button type="button" class="copy-btn">Copy Address Name</button>
+                      </div>
+                  `;
+                  const infoWindow = new google.maps.InfoWindow({ content: infoWindowContent });
+                  marker.addListener("click", () => {
+                      markers.forEach(m => {
+                          if (m.infoWindow.getMap() && m.marker !== marker) {
+                              m.infoWindow.close();
+                          }
+                      });
+  
+                      map.panTo(marker.getPosition());
+                      setTimeout(() => {
+                          infoWindow.open(map, marker);
+                          map.setZoom(17);
+  
+                          if (window.markerCluster) {
+                              window.markerCluster.repaint();
+                              setTimeout(() => {
+                                  const cluster = window.markerCluster.getClusters().find(c => 
+                                      c.markers.some(m => m === marker)
+                                  );
+                                  if (cluster && cluster.markers.length > 1) {
+                                      map.setZoom(map.getZoom() + 2);
+                                  }
+                              }, 100);
+                          }
+                      }, 500);
+                      console.log(`Marker clicked: ${location.name}, panned and popup opened`);
+                  });
+  
+                  google.maps.event.addListener(infoWindow, 'domready', () => {
+                      const copyBtn = document.querySelector('.info-window .copy-btn');
+                      if (copyBtn) {
+                          copyBtn.addEventListener('click', () => copyAndClose(location.name));
+                      }
+                  });
+  
+                  markers.push({ 
+                      marker, 
+                      infoWindow, 
+                      name: location.name, 
+                      position: position,
+                      category: location.category 
+                  });
+  
+                  updateMarkerVisibility();
+                  if (callback) callback();
+              }
+          }
+  
+          function createCategoryFilters() {
+              const filterContainer = document.getElementById('category-filters');
+              filterContainer.innerHTML = '';
+  
+              categories.forEach(category => {
+                  const pill = document.createElement('span');
+                  pill.className = 'category-pill';
+                  
+                  const closeX = document.createElement('span');
+                  closeX.className = 'close-x';
+                  closeX.textContent = '×';
+                  pill.appendChild(closeX);
+                  
+                  const nameSpan = document.createElement('span');
+                  nameSpan.textContent = category.name;
+                  pill.appendChild(nameSpan);
+                  
+                  pill.style.borderColor = category.color;
+                  
+                  if (selectedCategories.includes(category.name)) {
+                      pill.classList.add('active');
+                      pill.style.backgroundColor = category.color;
+                      pill.style.color = '#fff';
+                  } else {
+                      pill.style.backgroundColor = '#fff';
+                      pill.style.color = category.color;
+                  }
+  
+                  pill.addEventListener('click', () => {
+                      if (selectedCategories.includes(category.name)) {
+                          selectedCategories = selectedCategories.filter(cat => cat !== category.name);
+                          pill.classList.remove('active');
+                          pill.style.backgroundColor = '#fff';
+                          pill.style.color = '#808080';
+                          pill.style.borderColor = '#808080';
+                      } else {
+                          selectedCategories.push(category.name);
+                          pill.classList.add('active');
+                          pill.style.backgroundColor = category.color;
+                          pill.style.color = '#fff';
+                          pill.style.borderColor = category.color;
+                      }
+                      updateMarkerVisibility();
+                      filterLocations();
+                  });
+  
+                  filterContainer.appendChild(pill);
+              });
+          }
+  
+          function updateMarkerVisibility() {
+              markers.forEach(markerData => {
+                  const isVisible = selectedCategories.includes(markerData.category);
+                  markerData.marker.setVisible(isVisible);
+                  if (!isVisible && markerData.infoWindow.getMap()) {
+                      markerData.infoWindow.close();
+                      console.log(`Closed info window for ${markerData.name} due to category filter`);
+                  }
+              });
+              if (window.markerCluster) {
+                  window.markerCluster.clearMarkers();
+                  window.markerCluster.addMarkers(markers.map(m => m.marker));
+              }
+          }
+  
+          function filterLocations() {
+              const searchInput = document.getElementById("location-search");
+              const searchQuery = searchInput ? searchInput.value.toLowerCase() : "";
+              const filteredLocations = locations.filter(location => {
+                  const matchesSearch = location.name.toLowerCase().includes(searchQuery);
+                  const matchesCategory = selectedCategories.includes(location.category);
+                  return matchesSearch && matchesCategory;
+              });
+              console.log("Filtered locations:", filteredLocations);
+              populateSearchResults(filteredLocations);
+          }
+  
+          function populateSearchResults(locationArray) {
+              const list = document.getElementById("search-results-list");
+              if (!list) {
+                  console.warn("Search results list element not found");
+                  return;
+              }
+              list.innerHTML = "";
+              console.log("Populating search results with:", locationArray);
+  
+              if (locationArray.length === 0) {
+                  const li = document.createElement("li");
+                  li.textContent = "No locations found";
+                  li.style.color = "#666";
+                  li.style.padding = "10px";
+                  list.appendChild(li);
+                  return;
+              }
+  
+              locationArray.forEach(location => {
+                  const li = document.createElement("li");
+                  const categoryInfo = getCategoryInfo(location.category);
+  
+                  const nameSpan = document.createElement("span");
+                  nameSpan.textContent = location.name;
+                  li.appendChild(nameSpan);
+  
+                  const suburbSpan = document.createElement("span");
+                  suburbSpan.textContent = location.suburb ? ` - ${location.suburb}` : '';
+                  suburbSpan.style.color = "#666";
+                  suburbSpan.style.marginLeft = "8px";
+                  li.appendChild(suburbSpan);
+                  
+                  const categoryBadge = document.createElement("span");
+                  categoryBadge.className = `location-category ${categoryInfo.class}`;
+                  categoryBadge.textContent = location.category;
+                  categoryBadge.style.backgroundColor = categoryInfo.color;
+                  li.appendChild(categoryBadge);
+  
+                  li.addEventListener("click", () => {
+                      const markerData = markers.find(m => m.name === location.name);
+                      if (markerData) {
+                          markers.forEach(m => {
+                              if (m.infoWindow.getMap()) {
+                                  m.infoWindow.close();
+                              }
+                          });
+  
+                          map.setCenter(markerData.marker.getPosition());
+                          map.setZoom(17);
+  
+                          markerData.infoWindow.open(map, markerData.marker);
+  
+                          if (window.markerCluster) {
+                              window.markerCluster.repaint();
+                              setTimeout(() => {
+                                  const cluster = window.markerCluster.getClusters().find(c => 
+                                      c.markers.some(m => m === markerData.marker)
+                                  );
+                                  if (cluster && cluster.markers.length > 1) {
+                                      map.setZoom(map.getZoom() + 2);
+                                  }
+                              }, 100);
+                          }
+  
+                          console.log(`Opened info window and zoomed to ${location.name}`);
+                      } else {
+                          console.error(`No marker found for ${location.name}`);
+                      }
+                  });
+  
+                  list.appendChild(li);
+              });
+          }
+  
+          function copyAndClose(addressName) {
+              if (event) event.preventDefault();
+              navigator.clipboard.writeText(addressName)
+                  .then(() => showSuccessPopup(addressName, true))
+                  .catch(err => {
+                      const successful = fallbackCopyToClipboard(addressName);
+                      showSuccessPopup(addressName, successful);
+                  });
+          }
+  
+          function fallbackCopyToClipboard(text) {
+              try {
+                  const tempInput = document.createElement("input");
+                  tempInput.style.position = "absolute";
+                  tempInput.style.left = "-1000px";
+                  tempInput.value = text;
+                  document.body.appendChild(tempInput);
+                  tempInput.select();
+                  const successful = document.execCommand('copy');
+                  document.body.removeChild(tempInput);
+                  return successful;
+              } catch (err) {
+                  return false;
+              }
+          }
+  
+          function showSuccessPopup(addressName, isSuccess) {
+              const overlay = document.getElementById("overlay");
+              const promptDiv = document.getElementById("successPrompt");
+              const promptText = document.getElementById("successText");
+              promptText.textContent = isSuccess ? `Copied "${addressName}"` : `Failed to copy "${addressName}"`;
+              overlay.style.display = "block";
+              promptDiv.style.display = "block";
+              document.getElementById("returnBtn").onclick = () => {
+                  const urlParams = new URLSearchParams(window.location.search);
+                  if (urlParams.get('js_opened') === 'true' || window.opener) {
+                      window.close();
+                      setTimeout(() => {
+                          if (!window.closed) alert("Tab didn't close automatically. Please close it manually.");
+                      }, 500);
+                  } else {
+                      alert("Please close this tab manually to return to the form.");
+                  }
+              };
+          }
+      </script>
+    
+  
+  </body>
